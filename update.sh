@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+set -e
 
 VERSION=`date +%s`
 PROJECT_ID="$(gcloud config get-value project -q)"
@@ -38,8 +38,6 @@ popd
 gcloud container clusters get-credentials a-node-cluster --zone us-central1-a --project deklerk-sandbox
 pushd senders/http
     update http-sender
-    kubectl set env deployments/http-sender HTTP_RECEIVER_IP=$HTTP_RECEIVER_IP
-    kubectl set env deployments/http-sender HTTP_RECEIVER_PORT=8080
 popd
 
 echo "Updated to version $VERSION"
