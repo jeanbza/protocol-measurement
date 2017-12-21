@@ -11,12 +11,12 @@ import (
 func main() {
 	sendIp := os.Getenv("HTTP_RECEIVER_IP")
 	if sendIp == "" {
-		panic("Expected to receive a port with environment variable HTTP_RECEIVER_IP")
+		panic("Expected to receive an environment variable HTTP_RECEIVER_IP")
 	}
 
 	sendPort := os.Getenv("HTTP_RECEIVER_PORT")
 	if sendPort == "" {
-		panic("Expected to receive a port with environment variable HTTP_RECEIVER_PORT")
+		panic("Expected to receive an environment variable HTTP_RECEIVER_PORT")
 	}
 
 	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
