@@ -39,10 +39,13 @@ func main() {
 
 	fmt.Println("Publishing")
 
-	t.Publish(ctx, &pubsub.Message{
+	res := t.Publish(ctx, &pubsub.Message{
 		Data:       []byte("Hello world"),
 		Attributes: map[string]string{"foo": "bar"},
 	})
+
+	s, err := res.Get(context.Background())
+	fmt.Println(s, err)
 
 	fmt.Println("Done")
 }
