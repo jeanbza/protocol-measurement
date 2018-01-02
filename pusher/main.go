@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"log"
-
 	"cloud.google.com/go/pubsub"
+	"deklerk-startup-project"
+	"encoding/json"
+	"fmt"
+	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
 	"os"
 	"sync"
@@ -13,12 +14,13 @@ import (
 )
 
 const (
-	topicName      = "send_queue"
-	messagesToSend = 1000
-	routines       = 4
+	topicName          = "send_queue"
+	routines           = 2
+	messagesPerRoutine = 1
 )
 
 var (
+	set         = uuid.NewV4().String()
 	sent uint64 = 0
 )
 
@@ -36,7 +38,7 @@ func main() {
 
 	client, err := pubsub.NewClient(ctx, projectId)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		panic(fmt.Sprintf("Failed to create client: %v", err))
 	}
 
 	fmt.Println("Getting topic")
@@ -62,12 +64,20 @@ func main() {
 }
 
 func startAdding(t *pubsub.Topic, ctx context.Context, wg *sync.WaitGroup) {
-	for i := 0; i < messagesToSend/routines; i++ {
+	for i := 0; i < messagesPerRoutine; i++ {
+		m := messages.Message{
+			Set:       set,
+			CreatedAt: time.Now(),
+		}
+		j, err := json.Marshal(m)
+		if err != nil {
+			panic(err)
+		}
+
 		res := t.Publish(ctx, &pubsub.Message{
-			Data:       []byte(fmt.Sprintf("{\"sentAt\":%d}", time.Now().UnixNano())),
-			Attributes: map[string]string{"foo": "bar"},
+			Data: j,
 		})
-		_, err := res.Get(context.Background())
+		_, err = res.Get(context.Background())
 		if err != nil {
 			panic(err)
 		}
@@ -87,5 +97,5 @@ func watch() {
 }
 
 func printProgress() {
-	fmt.Printf("%d / %d\n", sent, messagesToSend)
+	fmt.Printf("%d / %d\n", sent, messagesPerRoutine*routines)
 }
