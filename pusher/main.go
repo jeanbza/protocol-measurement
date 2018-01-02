@@ -7,10 +7,19 @@ import (
 	"cloud.google.com/go/pubsub"
 	"golang.org/x/net/context"
 	"os"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
-	topicName = "send_queue"
+	topicName      = "send_queue"
+	messagesToSend = 1000
+	routines       = 4
+)
+
+var (
+	sent uint64 = 0
 )
 
 func main() {
@@ -39,13 +48,44 @@ func main() {
 
 	fmt.Println("Publishing")
 
-	res := t.Publish(ctx, &pubsub.Message{
-		Data:       []byte("Hello world"),
-		Attributes: map[string]string{"foo": "bar"},
-	})
+	wg := &sync.WaitGroup{}
+	for j := 0; j < routines; j++ {
+		wg.Add(1)
+		go startAdding(t, ctx, wg)
+	}
 
-	s, err := res.Get(context.Background())
-	fmt.Println(s, err)
+	go watch()
 
+	wg.Wait()
+	printProgress()
 	fmt.Println("Done")
+}
+
+func startAdding(t *pubsub.Topic, ctx context.Context, wg *sync.WaitGroup) {
+	for i := 0; i < messagesToSend/routines; i++ {
+		res := t.Publish(ctx, &pubsub.Message{
+			Data:       []byte(fmt.Sprintf("{\"sentAt\":%d}", time.Now().UnixNano())),
+			Attributes: map[string]string{"foo": "bar"},
+		})
+		_, err := res.Get(context.Background())
+		if err != nil {
+			panic(err)
+		}
+
+		atomic.AddUint64(&sent, 1)
+	}
+	wg.Done()
+}
+
+func watch() {
+	t := time.NewTicker(time.Second)
+
+	for {
+		<-t.C
+		printProgress()
+	}
+}
+
+func printProgress() {
+	fmt.Printf("%d / %d\n", sent, messagesToSend)
 }
