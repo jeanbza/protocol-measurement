@@ -1,5 +1,10 @@
 # deklerk Startup Project
 
+## Running locally
+
+1. Install docker
+1. `docker-compose up`
+
 ## Deploying and updating deployments
 
 1. Install `gcloud` and `kubectl`
