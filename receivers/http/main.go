@@ -6,11 +6,11 @@ import (
 	"deklerk-startup-project"
 	"encoding/json"
 	"fmt"
+	"github.com/satori/go.uuid"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
-	"github.com/satori/go.uuid"
 )
 
 const (
@@ -52,15 +52,24 @@ func main() {
 		}
 
 		i.ReceivedAt = time.Now()
+		id, err := uuid.NewV4()
+		if err != nil {
+			panic(err)
+		}
 
 		insertQueue <- spanner.Insert(
 			table,
 			[]string{"id", "protocol", "resultSet", "createdAt", "sentAt", "receivedAt"},
-			[]interface{}{uuid.NewV4().String(), "http", i.Set, i.CreatedAt, i.SentAt, i.ReceivedAt},
+			[]interface{}{id.String(), "http", i.Set, i.CreatedAt, i.SentAt, i.ReceivedAt},
 		)
 	})
 
-	http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("We're done here!")
 }
 
 func repeatedlySaveToSpanner(ctx context.Context, client *spanner.Client, insertQueue <-chan (*spanner.Mutation)) {
