@@ -37,7 +37,6 @@ func main() {
 	}
 
 	fmt.Println("Getting topic")
-
 	t := client.Topic(topicName)
 	if t == nil {
 		panic("Expected topic not to be nil")
@@ -49,8 +48,12 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+
+	r.Handle("/", http.FileServer(http.Dir("static")))
+	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
 	r.HandleFunc("/set", sm.createSetHandler).Methods("POST")
 
+	fmt.Println("Serving")
 	err = http.ListenAndServe(fmt.Sprintf(":%s", port), r)
 	if err != nil {
 		panic(err)
