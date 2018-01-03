@@ -11,6 +11,7 @@ import (
 	"github.com/satori/go.uuid"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -64,9 +65,9 @@ func main() {
 		var i = new(messages.Message)
 		json.Unmarshal(msg.Data, &i)
 
-		fmt.Println(i)
+		i.SentAt = time.Now()
 
-		err := sendMessage(sendIp, sendPort, msg.Data)
+		err := sendMessage(sendIp, sendPort, i)
 		if err != nil {
 			panic(err)
 		}
@@ -79,8 +80,13 @@ func main() {
 	fmt.Println("Done listening")
 }
 
-func sendMessage(sendIp, sendPort string, msg []byte) error {
-	b := bytes.NewBuffer(msg)
+func sendMessage(sendIp, sendPort string, msg *messages.Message) error {
+	o, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	b := bytes.NewBuffer(o)
 	sendResp, err := http.Post(fmt.Sprintf("http://%s:%s", sendIp, sendPort), "text/plain", b)
 	if err != nil {
 		return err

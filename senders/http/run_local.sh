@@ -5,7 +5,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="/Users/deklerk/workspace/go/src/deklerk-s
 gcloud container clusters get-credentials b-node-cluster --zone us-central1-a --project deklerk-sandbox
 
 export HTTP_RECEIVER_IP=`kubectl get services | grep http-receiver | awk '{print $4}'`
+export HTTP_RECEIVER_IP=127.0.0.1
 export HTTP_RECEIVER_PORT=8081
 
-export PORT=8001
 go run main.go
