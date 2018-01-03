@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"cloud.google.com/go/pubsub"
-	"context"
 	"deklerk-startup-project"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"golang.org/x/net/context"
 	"net/http"
 	"os"
 	"time"
@@ -16,10 +16,6 @@ import (
 
 const (
 	topicName = "send_queue"
-)
-
-var (
-	id = fmt.Sprintf("http-receiver-%s", uuid.NewV4().String())
 )
 
 func main() {
@@ -52,15 +48,23 @@ func main() {
 		panic("Expected topic not to be nil")
 	}
 
-	fmt.Println("Creating subscription", id)
-	s, err := client.CreateSubscription(ctx, id, pubsub.SubscriptionConfig{Topic: t})
+	subscriptionId, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+
+	subscriptionName := fmt.Sprintf("http-sender-%s", subscriptionId.String())
+
+	fmt.Println("Creating subscription", subscriptionName)
+	s, err := client.CreateSubscription(ctx, subscriptionName, pubsub.SubscriptionConfig{Topic: t})
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Listening for messages")
 	err = s.Receive(ctx, func(c context.Context, msg *pubsub.Message) {
-		fmt.Println("Got message!")
+		fmt.Println("About to send")
+		msg.Ack()
 
 		var i = new(messages.Message)
 		json.Unmarshal(msg.Data, &i)
@@ -71,13 +75,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Done receiving")
+
+		fmt.Println("Sent")
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Done listening")
+	fmt.Println("We're done here!")
 }
 
 func sendMessage(sendIp, sendPort string, msg *messages.Message) error {
@@ -97,23 +102,4 @@ func sendMessage(sendIp, sendPort string, msg *messages.Message) error {
 	}
 
 	return nil
-}
-
-func cleanup(s *pubsub.Subscription) {
-	fmt.Println("Deleting subscription")
-	if s == nil {
-		return
-	}
-
-	exists, err := s.Exists(context.Background())
-	if err != nil {
-		panic(err)
-	}
-
-	if exists {
-		err := s.Delete(context.Background())
-		if err != nil {
-			panic(err)
-		}
-	}
 }
