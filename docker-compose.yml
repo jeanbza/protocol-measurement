@@ -1,7 +1,7 @@
 version: '3.4'
 
 services:
-  pusher:
+  orchestrator:
     build: .
     ports:
       - "8000:8000"
@@ -13,7 +13,7 @@ services:
       - /bin/sh
       - -c
       - |
-        go run pusher/*.go
+        go run orchestrator/*.go
   http_receiver:
     build: .
     ports:
