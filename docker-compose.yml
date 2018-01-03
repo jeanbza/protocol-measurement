@@ -1,0 +1,42 @@
+version: '3.4'
+
+services:
+  pusher:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+    - GCP_PROJECT_ID=deklerk-sandbox
+    - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    - PORT=8000
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run pusher/*.go
+  http_receiver:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/http/*.go
+  http_sender:
+    build: .
+    links:
+      - http_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - HTTP_RECEIVER_IP=http_receiver
+      - HTTP_RECEIVER_PORT=8081
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/http/*.go
