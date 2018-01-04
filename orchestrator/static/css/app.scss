@@ -1,3 +1,35 @@
-html {
-  background: green;
+body {
+  margin: 0;
+}
+
+.page {
+  display: flex;
+}
+
+.sidebar {
+  width: 300px;
+}
+
+.sidebar--title, .sidebar--item {
+  padding: 16px;
+}
+
+.sidebar--title {
+  margin: 0;
+}
+
+.sidebar--item {
+  cursor: pointer;
+
+  &:hover {
+    background-color: lightgray;
+  }
+
+  &.sidebar--item__active {
+    background-color: darkgray;
+  }
+}
+
+.results-area {
+  padding: 16px;
 }
