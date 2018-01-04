@@ -7,12 +7,15 @@ import (
 	"golang.org/x/net/context"
 	"net/http"
 	"os"
+	"cloud.google.com/go/spanner"
 )
 
 const (
 	topicName          = "send_queue"
 	routines           = 2
 	messagesPerRoutine = 1
+	database           = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
+	table              = "result2"
 )
 
 func main() {
@@ -31,18 +34,31 @@ func main() {
 	}
 
 	fmt.Println("Getting client")
-	client, err := pubsub.NewClient(ctx, projectId)
+	pubsubClient, err := pubsub.NewClient(ctx, projectId)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create client: %v", err))
 	}
+	defer func() {
+		err := pubsubClient.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	fmt.Println("Getting topic")
-	t := client.Topic(topicName)
+	t := pubsubClient.Topic(topicName)
 	if t == nil {
 		panic("Expected topic not to be nil")
 	}
 
+	spannerClient, err := spanner.NewClient(ctx, database)
+	if err != nil {
+		panic(err)
+	}
+	defer spannerClient.Close()
+
 	sm := setManager{
+		spannerClient: spannerClient,
 		topic: t,
 		ctx:   ctx,
 	}
@@ -51,7 +67,8 @@ func main() {
 
 	r.Handle("/", http.FileServer(http.Dir("static")))
 	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
-	r.HandleFunc("/set", sm.createSetHandler).Methods("POST")
+	r.HandleFunc("/sets", sm.getSetsHandler).Methods("GET")
+	r.HandleFunc("/sets", sm.createSetHandler).Methods("POST")
 
 	fmt.Println("Serving")
 	err = http.ListenAndServe(fmt.Sprintf(":%s", port), r)

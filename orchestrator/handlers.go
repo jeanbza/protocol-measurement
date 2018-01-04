@@ -2,11 +2,13 @@ package main
 
 import (
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/spanner"
 	"context"
 	"deklerk-startup-project"
 	"encoding/json"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"google.golang.org/api/iterator"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -14,8 +16,9 @@ import (
 )
 
 type setManager struct {
-	topic *pubsub.Topic
-	ctx   context.Context
+	spannerClient *spanner.Client
+	topic         *pubsub.Topic
+	ctx           context.Context
 }
 
 func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +38,44 @@ func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
 	sc.printProgress()
 }
 
+func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
+	stmt := spanner.Statement{SQL: `SELECT protocol, resultSet FROM result2 GROUP BY protocol, resultSet`}
+	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
+
+	results := []map[string]string{}
+
+	defer iter.Stop()
+	for {
+		row, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		var set, protocol string
+		if err := row.Columns(&set, &protocol); err != nil {
+			panic(err)
+		}
+
+		resultMap := map[string]string{
+			"set":      set,
+			"protocol": protocol,
+		}
+		results = append(results, resultMap)
+	}
+
+	outBytes, err := json.Marshal(results)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = w.Write(outBytes)
+	if err != nil {
+		panic(err)
+	}
+}
+
 type setCreator struct {
 	wg    *sync.WaitGroup
 	ctx   context.Context
@@ -49,17 +90,17 @@ func (sc *setCreator) create() {
 		go sc.startAdding()
 	}
 
-	stopPrinting := make(chan(struct{}))
+	stopPrinting := make(chan (struct{}))
 
 	go func() {
 		t := time.NewTicker(time.Second)
 
 		for {
 			select {
-				case <-t.C:
-					sc.printProgress()
-				case <-stopPrinting:
-					return
+			case <-t.C:
+				sc.printProgress()
+			case <-stopPrinting:
+				return
 			}
 		}
 	}()
