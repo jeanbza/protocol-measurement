@@ -39,10 +39,10 @@ func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
-	stmt := spanner.Statement{SQL: `SELECT protocol, resultSet FROM result2 GROUP BY protocol, resultSet`}
+	stmt := spanner.Statement{SQL: `SELECT resultSet FROM result2 GROUP BY protocol, resultSet`}
 	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
 
-	results := []map[string]string{}
+	sets := []string{}
 
 	defer iter.Stop()
 	for {
@@ -53,19 +53,15 @@ func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		var set, protocol string
-		if err := row.Columns(&set, &protocol); err != nil {
+		var set string
+		if err := row.Columns(&set); err != nil {
 			panic(err)
 		}
 
-		resultMap := map[string]string{
-			"set":      set,
-			"protocol": protocol,
-		}
-		results = append(results, resultMap)
+		sets = append(sets, set)
 	}
 
-	outBytes, err := json.Marshal(results)
+	outBytes, err := json.Marshal(sets)
 	if err != nil {
 		panic(err)
 	}
