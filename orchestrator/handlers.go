@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/satori/go.uuid"
 	"google.golang.org/api/iterator"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -56,17 +57,31 @@ func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var values map[string]int
+	json.Unmarshal(bodyBytes, &values)
+
+	numMessages, ok := values["numMessages"]
+	if !ok {
+		panic(fmt.Sprintf("Expected numMessages, got %v", values))
+	}
+
 	runId, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
 	}
 
 	sc := &setCreator{
-		wg:            &sync.WaitGroup{},
-		ctx:           sm.ctx,
-		spannerClient: sm.spannerClient,
-		topic:         sm.topic,
-		runId:         runId.String(),
+		messagesPerRoutine: numMessages / routines,
+		wg:                 &sync.WaitGroup{},
+		ctx:                sm.ctx,
+		spannerClient:      sm.spannerClient,
+		topic:              sm.topic,
+		runId:              runId.String(),
 	}
 
 	sc.create()
@@ -74,19 +89,20 @@ func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type setCreator struct {
-	wg            *sync.WaitGroup
-	ctx           context.Context
-	spannerClient *spanner.Client
-	topic         *pubsub.Topic
-	runId         string
-	sent          uint64
+	messagesPerRoutine int
+	wg                 *sync.WaitGroup
+	ctx                context.Context
+	spannerClient      *spanner.Client
+	topic              *pubsub.Topic
+	runId              string
+	sent               uint64
 }
 
 func (sc *setCreator) create() {
 	_, err := sc.spannerClient.Apply(sc.ctx, []*spanner.Mutation{spanner.Insert(
 		"runs",
 		[]string{"id", "createdAt", "finishedCreating", "totalMessages"},
-		[]interface{}{sc.runId, time.Now(), false, routines * messagesPerRoutine},
+		[]interface{}{sc.runId, time.Now(), false, routines * sc.messagesPerRoutine},
 	)})
 	if err != nil {
 		panic(err)
@@ -126,7 +142,7 @@ func (sc *setCreator) create() {
 }
 
 func (sc *setCreator) startAdding() {
-	for i := 0; i < messagesPerRoutine; i++ {
+	for i := 0; i < sc.messagesPerRoutine; i++ {
 		m := messages.Message{
 			RunId:     sc.runId,
 			CreatedAt: time.Now(),
@@ -150,5 +166,5 @@ func (sc *setCreator) startAdding() {
 }
 
 func (sc *setCreator) printProgress() {
-	fmt.Printf("%s: %d / %d\n", sc.runId, sc.sent, messagesPerRoutine*routines)
+	fmt.Printf("%s: %d / %d\n", sc.runId, sc.sent, sc.messagesPerRoutine*routines)
 }

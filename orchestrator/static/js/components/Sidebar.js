@@ -26,11 +26,19 @@ export default class Sidebar extends React.Component {
             loading: true,
             sets: [],
             interval: interval,
+            selectedAmount: '1000',
         }
     }
 
     componentWillUnmount() {
         clearInterval(this.state.interval)
+    }
+
+    handleSubmit() {
+        console.log('Sending', this.state.selectedAmount)
+        fetch(new Request('/sets', {method: 'POST', body: `{"numMessages":${this.state.selectedAmount}}`}))
+            .then(() => console.log('Done'))
+            .catch(err => console.error(err))
     }
 
     render() {
@@ -63,16 +71,16 @@ export default class Sidebar extends React.Component {
             <h3 className="sidebar--title">
                 Run a new set
             </h3>
-            <form className="new-run" action="/sets" method="post">
+            <div className="new-run">
                 <label>Messages</label>
-                <select>
+                <select name="numMessages" onChange={e => this.setState({selectedAmount: e.target.value})}>
                     <option value="1000">1,000</option>
                     <option value="10000">10,000</option>
                     <option value="100000">100,000</option>
                     <option value="1000000">1,000,000</option>
                 </select>
-                <input type="submit" value="Run new set"/>
-            </form>
+                <button onClick={this.handleSubmit.bind(this)}>Run new set</button>
+            </div>
             <h3 className="sidebar--title">
                 Select a set
             </h3>

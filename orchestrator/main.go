@@ -12,8 +12,7 @@ import (
 
 const (
 	topicName          = "send_queue"
-	routines           = 2
-	messagesPerRoutine = 1
+	routines           = 10
 	database           = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
 )
 
