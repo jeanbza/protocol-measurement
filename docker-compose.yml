@@ -4,16 +4,20 @@ services:
   orchestrator:
     build: .
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
     - GCP_PROJECT_ID=deklerk-sandbox
     - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
-    - PORT=8000
+    - PORT=8080
     command:
       - /bin/sh
-      - -c
+      - -cex
       - |
-        go run orchestrator/*.go
+        cd orchestrator
+        rm -rf node_modules
+        npm install
+        ./node_modules/.bin/webpack --progress
+        go run *.go
   http_receiver:
     build: .
     ports:
