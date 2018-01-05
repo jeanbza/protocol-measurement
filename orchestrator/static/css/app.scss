@@ -1,4 +1,4 @@
-body {
+body, h3 {
   margin: 0;
 }
 
@@ -7,11 +7,12 @@ body {
 }
 
 .sidebar {
+  padding-top: 8px;
   width: 400px;
 }
 
 .sidebar--title, .sidebar--item, .sidebar--loading {
-  padding: 16px;
+  padding: 8px 16px;
 }
 
 .sidebar--title {
@@ -33,4 +34,12 @@ body {
 
 .results-area {
   padding: 16px;
+}
+
+.new-run {
+  padding: 0 16px;
+
+  select {
+    margin: 0 16px;
+  }
 }

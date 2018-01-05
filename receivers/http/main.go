@@ -15,7 +15,6 @@ import (
 
 const (
 	database = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
-	table    = "result2"
 )
 
 func main() {
@@ -58,9 +57,9 @@ func main() {
 		}
 
 		insertQueue <- spanner.Insert(
-			table,
-			[]string{"id", "protocol", "resultSet", "createdAt", "sentAt", "receivedAt"},
-			[]interface{}{id.String(), "http", i.Set, i.CreatedAt, i.SentAt, i.ReceivedAt},
+			"results",
+			[]string{"id", "runId", "protocol", "createdAt", "sentAt", "receivedAt"},
+			[]interface{}{id.String(), i.RunId, "http", i.CreatedAt, i.SentAt, i.ReceivedAt},
 		)
 	})
 

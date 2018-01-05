@@ -21,25 +21,8 @@ type setManager struct {
 	ctx           context.Context
 }
 
-func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
-	setName, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	sc := &setCreator{
-		wg:    &sync.WaitGroup{},
-		ctx:   sm.ctx,
-		topic: sm.topic,
-		name:  setName.String(),
-	}
-
-	sc.create()
-	sc.printProgress()
-}
-
 func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
-	stmt := spanner.Statement{SQL: `SELECT resultSet FROM result2 GROUP BY protocol, resultSet`}
+	stmt := spanner.Statement{SQL: `SELECT id FROM runs`}
 	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
 
 	sets := []string{}
@@ -72,15 +55,43 @@ func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
+	runId, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+
+	sc := &setCreator{
+		wg:            &sync.WaitGroup{},
+		ctx:           sm.ctx,
+		spannerClient: sm.spannerClient,
+		topic:         sm.topic,
+		runId:         runId.String(),
+	}
+
+	sc.create()
+	sc.printProgress()
+}
+
 type setCreator struct {
-	wg    *sync.WaitGroup
-	ctx   context.Context
-	topic *pubsub.Topic
-	name  string
-	sent  uint64
+	wg            *sync.WaitGroup
+	ctx           context.Context
+	spannerClient *spanner.Client
+	topic         *pubsub.Topic
+	runId         string
+	sent          uint64
 }
 
 func (sc *setCreator) create() {
+	_, err := sc.spannerClient.Apply(sc.ctx, []*spanner.Mutation{spanner.Insert(
+		"runs",
+		[]string{"id", "createdAt", "finishedCreating", "totalMessages"},
+		[]interface{}{sc.runId, time.Now(), false, routines * messagesPerRoutine},
+	)})
+	if err != nil {
+		panic(err)
+	}
+
 	for j := 0; j < routines; j++ {
 		sc.wg.Add(1)
 		go sc.startAdding()
@@ -103,12 +114,21 @@ func (sc *setCreator) create() {
 
 	sc.wg.Wait()
 	stopPrinting <- struct{}{}
+
+	_, err = sc.spannerClient.Apply(sc.ctx, []*spanner.Mutation{spanner.Update(
+		"runs",
+		[]string{"id", "finishedCreating"},
+		[]interface{}{sc.runId, true},
+	)})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (sc *setCreator) startAdding() {
 	for i := 0; i < messagesPerRoutine; i++ {
 		m := messages.Message{
-			Set:       sc.name,
+			RunId:     sc.runId,
 			CreatedAt: time.Now(),
 		}
 		j, err := json.Marshal(m)
@@ -130,5 +150,5 @@ func (sc *setCreator) startAdding() {
 }
 
 func (sc *setCreator) printProgress() {
-	fmt.Printf("%s: %d / %d\n", sc.name, sc.sent, messagesPerRoutine*routines)
+	fmt.Printf("%s: %d / %d\n", sc.runId, sc.sent, messagesPerRoutine*routines)
 }

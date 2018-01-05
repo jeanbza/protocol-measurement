@@ -15,7 +15,6 @@ const (
 	routines           = 2
 	messagesPerRoutine = 1
 	database           = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
-	table              = "result2"
 )
 
 func main() {
@@ -65,7 +64,7 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.Handle("/", http.FileServer(http.Dir("static")))
+	r.Handle("/", http.FileServer(http.Dir("static"))) // hacky - be sure to run go run *.go in this folder
 	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
 	r.HandleFunc("/sets", sm.getSetsHandler).Methods("GET")
 	r.HandleFunc("/sets", sm.createSetHandler).Methods("POST")
