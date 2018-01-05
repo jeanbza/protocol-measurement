@@ -21,7 +21,10 @@ export default class Sidebar extends React.Component {
         const interval = setInterval(() => fetch(new Request('/runs'))
             .then(resp => resp.json())
             .then(runs => this.setState({runs, loading: false}))
-            .catch(err => console.error(err)), 200)
+            .catch(err => {
+                console.error(err)
+                clearInterval(interval)
+            }), 200)
 
         this.state = {
             loading: true,

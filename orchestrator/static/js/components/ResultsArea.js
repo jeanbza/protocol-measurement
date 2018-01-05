@@ -9,12 +9,18 @@ class RunResults extends React.Component {
         const runInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}`))
             .then(resp => resp.json())
             .then(run => this.setState({run}))
-            .catch(err => console.error(err)), 200)
+            .catch(err => {
+                console.error(err)
+                clearInterval(runInterval)
+            }), 200)
 
         const progressInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}/results`))
             .then(resp => resp.json())
             .then(progress => this.setState({progress}))
-            .catch(err => console.error(err)), 200)
+            .catch(err => {
+                console.error(err)
+                clearInterval(progressInterval)
+            }), 200)
 
         this.state = {
             runInterval,
@@ -23,7 +29,7 @@ class RunResults extends React.Component {
             progress: {},
         }
     }
-    
+
     componentWillReceiveProps(nextProps) {
         const {selectedRun} = nextProps
 
