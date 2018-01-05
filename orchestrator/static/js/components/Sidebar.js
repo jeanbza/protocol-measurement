@@ -26,7 +26,7 @@ export default class Sidebar extends React.Component {
             loading: true,
             sets: [],
             interval: interval,
-            selectedAmount: '1000',
+            selectedAmount: '100',
         }
     }
 
