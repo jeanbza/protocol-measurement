@@ -120,10 +120,10 @@ func (sm *runManager) getRunHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sm *runManager) getRunsHandler(w http.ResponseWriter, r *http.Request) {
-	stmt := spanner.Statement{SQL: `SELECT id FROM runs`}
+	stmt := spanner.Statement{SQL: `SELECT id, createdAt, finishedCreating, totalMessages FROM runs`}
 	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
 
-	runs := []string{}
+	runs := []map[string]interface{}{}
 
 	defer iter.Stop()
 	for {
@@ -134,10 +134,20 @@ func (sm *runManager) getRunsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		var run string
-		if err := row.Columns(&run); err != nil {
+
+		var id string
+		var createdAt time.Time
+		var finishedCreating bool
+		var totalMessages int64
+		if err := row.Columns(&id, &createdAt, &finishedCreating, &totalMessages); err != nil {
 			panic(err)
 		}
+
+		run := map[string]interface{}{}
+		run["id"] = id
+		run["createdAt"] = createdAt
+		run["finishedCreating"] = finishedCreating
+		run["totalMessages"] = totalMessages
 
 		runs = append(runs, run)
 	}

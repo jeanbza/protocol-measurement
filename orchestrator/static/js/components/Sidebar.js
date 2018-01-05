@@ -1,14 +1,15 @@
 import React from 'react'
+import moment from 'moment'
 
-class SidebarItem extends React.Component {
+class SidebarItem extends React.PureComponent {
     render() {
-        const {title, active, onClick} = this.props
+        const {title, timeCreated, active, onClick} = this.props
 
         const className = active ? "sidebar--item sidebar--item__active" : "sidebar--item sidebar--item__inactive"
 
         return <div className={className} onClick={onClick}>
-            {title}
-            <div className="sidebar--item-border"/>
+            <div>{title}</div>
+            <div>{moment().diff(timeCreated, 'minutes')}m ago</div>
         </div>
     }
 }
@@ -49,11 +50,13 @@ export default class Sidebar extends React.Component {
         const {runs, loading} = this.state
         const {selectedRun, onRunChange} = this.props
 
-        const sidebarItems = runs.map((run, index) =>
-            <SidebarItem key={index}
-                         title={run}
-                         active={run === selectedRun}
-                         onClick={() => onRunChange(run)}/>)
+        const sidebarItems = runs
+            .sort((a, b) => moment(b.createdAt).unix() - moment(a.createdAt).unix())
+            .map((run, index) => <SidebarItem key={index}
+                                              title={run.id}
+                                              timeCreated={run.createdAt}
+                                              active={run.id === selectedRun}
+                                              onClick={() => onRunChange(run.id)}/>)
 
         let content = <div className="sidebar--loading">
             Loading runs...
