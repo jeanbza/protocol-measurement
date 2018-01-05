@@ -1,6 +1,6 @@
 import React from 'react'
 
-class RunResults extends React.PureComponent {
+class RunResults extends React.Component {
     constructor(props) {
         super(props)
 
@@ -22,6 +22,30 @@ class RunResults extends React.PureComponent {
             run: {},
             progress: {},
         }
+    }
+    
+    componentWillReceiveProps(nextProps) {
+        const {selectedRun} = nextProps
+
+        clearInterval(this.state.runInterval)
+        clearInterval(this.state.progressInterval)
+
+        const runInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}`))
+            .then(resp => resp.json())
+            .then(run => this.setState({run}))
+            .catch(err => console.error(err)), 200)
+
+        const progressInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}/results`))
+            .then(resp => resp.json())
+            .then(progress => this.setState({progress}))
+            .catch(err => console.error(err)), 200)
+
+        this.setState({
+            runInterval,
+            progressInterval,
+            run: {},
+            progress: {},
+        })
     }
 
     componentWillUnmount() {
