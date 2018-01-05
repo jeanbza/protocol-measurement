@@ -7,6 +7,7 @@ import (
 	"deklerk-startup-project"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/satori/go.uuid"
 	"google.golang.org/api/iterator"
 	"io/ioutil"
@@ -16,17 +17,27 @@ import (
 	"time"
 )
 
-type setManager struct {
+type runManager struct {
 	spannerClient *spanner.Client
 	topic         *pubsub.Topic
 	ctx           context.Context
 }
 
-func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
-	stmt := spanner.Statement{SQL: `SELECT id FROM runs`}
+func (sm *runManager) getRunResultsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	runId, ok := vars["runId"]
+	if !ok {
+		panic("Expected to be provided a runId")
+	}
+
+	stmt := spanner.Statement{SQL: `
+		SELECT COUNT(*), protocol
+		FROM results
+		WHERE runId = @runId
+		GROUP BY protocol`, Params: map[string]interface{}{"runId": runId}}
 	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
 
-	sets := []string{}
+	runs := map[string]int64{}
 
 	defer iter.Stop()
 	for {
@@ -37,15 +48,17 @@ func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		var set string
-		if err := row.Columns(&set); err != nil {
+
+		var count int64
+		var run string
+		if err := row.Columns(&count, &run); err != nil {
 			panic(err)
 		}
 
-		sets = append(sets, set)
+		runs[run] = count
 	}
 
-	outBytes, err := json.Marshal(sets)
+	outBytes, err := json.Marshal(runs)
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +69,91 @@ func (sm *setManager) getSetsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
+func (sm *runManager) getRunHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	runId, ok := vars["runId"]
+	if !ok {
+		panic("Expected to be provided a runId")
+	}
+
+	stmt := spanner.Statement{SQL: `
+		SELECT id, createdAt, finishedCreating, totalMessages
+		FROM runs
+		WHERE id = @runId`, Params: map[string]interface{}{"runId": runId}}
+	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
+
+	run := map[string]interface{}{}
+
+	defer iter.Stop()
+	for {
+		row, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		var id string
+		var createdAt time.Time
+		var finishedCreating bool
+		var totalMessages int64
+		if err := row.Columns(&id, &createdAt, &finishedCreating, &totalMessages); err != nil {
+			panic(err)
+		}
+
+		run["id"] = id
+		run["createdAt"] = createdAt
+		run["finishedCreating"] = finishedCreating
+		run["totalMessages"] = totalMessages
+	}
+
+	outBytes, err := json.Marshal(run)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = w.Write(outBytes)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (sm *runManager) getRunsHandler(w http.ResponseWriter, r *http.Request) {
+	stmt := spanner.Statement{SQL: `SELECT id FROM runs`}
+	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
+
+	runs := []string{}
+
+	defer iter.Stop()
+	for {
+		row, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		var run string
+		if err := row.Columns(&run); err != nil {
+			panic(err)
+		}
+
+		runs = append(runs, run)
+	}
+
+	outBytes, err := json.Marshal(runs)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = w.Write(outBytes)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (sm *runManager) createRunHandler(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
@@ -75,7 +172,7 @@ func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	sc := &setCreator{
+	rc := &runCreator{
 		messagesPerRoutine: numMessages / routines,
 		wg:                 &sync.WaitGroup{},
 		ctx:                sm.ctx,
@@ -84,11 +181,11 @@ func (sm *setManager) createSetHandler(w http.ResponseWriter, r *http.Request) {
 		runId:              runId.String(),
 	}
 
-	sc.create()
-	sc.printProgress()
+	rc.create()
+	rc.printProgress()
 }
 
-type setCreator struct {
+type runCreator struct {
 	messagesPerRoutine int
 	wg                 *sync.WaitGroup
 	ctx                context.Context
@@ -98,7 +195,7 @@ type setCreator struct {
 	sent               uint64
 }
 
-func (sc *setCreator) create() {
+func (sc *runCreator) create() {
 	_, err := sc.spannerClient.Apply(sc.ctx, []*spanner.Mutation{spanner.Insert(
 		"runs",
 		[]string{"id", "createdAt", "finishedCreating", "totalMessages"},
@@ -141,7 +238,7 @@ func (sc *setCreator) create() {
 	}
 }
 
-func (sc *setCreator) startAdding() {
+func (sc *runCreator) startAdding() {
 	for i := 0; i < sc.messagesPerRoutine; i++ {
 		m := messages.Message{
 			RunId:     sc.runId,
@@ -165,6 +262,6 @@ func (sc *setCreator) startAdding() {
 	sc.wg.Done()
 }
 
-func (sc *setCreator) printProgress() {
+func (sc *runCreator) printProgress() {
 	fmt.Printf("%s: %d / %d\n", sc.runId, sc.sent, sc.messagesPerRoutine*routines)
 }

@@ -11,22 +11,22 @@ class App extends React.Component {
         super(props)
 
         this.state = {
-            selectedSet: undefined,
+            selectedRun: undefined,
         }
     }
 
-    onSetChangeHandler(newSet) {
+    onRunChangeHandler(newRun) {
         this.setState({
-            selectedSet: newSet,
+            selectedRun: newRun,
         })
     }
 
     render() {
-        const {selectedSet} = this.state
+        const {selectedRun} = this.state
 
         return <div className="page">
-            <Sidebar selectedSet={selectedSet} onSetChange={this.onSetChangeHandler.bind(this)}/>
-            <ResultsArea selectedSet={selectedSet}/>
+            <Sidebar selectedRun={selectedRun} onRunChange={this.onRunChangeHandler.bind(this)}/>
+            <ResultsArea selectedRun={selectedRun}/>
         </div>
     }
 }

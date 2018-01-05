@@ -88,7 +88,7 @@ func sendMessage(sendIp, sendPort string, msg *messages.Message) error {
 	if err != nil {
 		return err
 	}
-	
+
 	conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", sendIp, sendPort))
 	if err != nil {
 		return err

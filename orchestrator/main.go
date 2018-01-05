@@ -55,7 +55,7 @@ func main() {
 	}
 	defer spannerClient.Close()
 
-	sm := setManager{
+	sm := runManager{
 		spannerClient: spannerClient,
 		topic: t,
 		ctx:   ctx,
@@ -65,8 +65,11 @@ func main() {
 
 	r.Handle("/", http.FileServer(http.Dir("static"))) // hacky - be sure to run go run *.go in this folder
 	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
-	r.HandleFunc("/sets", sm.getSetsHandler).Methods("GET")
-	r.HandleFunc("/sets", sm.createSetHandler).Methods("POST")
+
+	r.HandleFunc("/runs/{runId}/results", sm.getRunResultsHandler).Methods("GET")
+	r.HandleFunc("/runs/{runId}", sm.getRunHandler).Methods("GET")
+	r.HandleFunc("/runs", sm.getRunsHandler).Methods("GET")
+	r.HandleFunc("/runs", sm.createRunHandler).Methods("POST")
 
 	fmt.Println("Serving")
 	err = http.ListenAndServe(fmt.Sprintf(":%s", port), r)
