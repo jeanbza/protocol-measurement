@@ -183,6 +183,9 @@ func (sm *runManager) createRunHandler(w http.ResponseWriter, r *http.Request) {
 
 	rc.create()
 	rc.printProgress()
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(fmt.Sprintf(`{"id": "%s"}`, rc.runId)))
 }
 
 type runCreator struct {

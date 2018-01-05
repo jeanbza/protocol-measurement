@@ -37,7 +37,11 @@ export default class Sidebar extends React.Component {
     handleSubmit() {
         console.log('Sending', this.state.selectedAmount)
         fetch(new Request('/runs', {method: 'POST', body: `{"numMessages":${this.state.selectedAmount}}`}))
-            .then(() => console.log('Done'))
+            .then(resp => resp.json())
+            .then(json => {
+                console.log(json)
+                this.props.onRunChange(json.id)
+            })
             .catch(err => console.error(err))
     }
 
