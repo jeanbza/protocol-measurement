@@ -30,6 +30,18 @@ services:
       - -c
       - |
         go run receivers/http/*.go
+  udp_receiver:
+    build: .
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/udp/*.go
   http_sender:
     build: .
     links:
@@ -44,3 +56,17 @@ services:
       - -c
       - |
         go run senders/http/*.go
+  udp_sender:
+    build: .
+    links:
+      - udp_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - UDP_RECEIVER_IP=udp_receiver
+      - UDP_RECEIVER_PORT=8082
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/udp/*.go
