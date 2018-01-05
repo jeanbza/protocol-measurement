@@ -2,18 +2,19 @@ package main
 
 import (
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/spanner"
 	"fmt"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"net/http"
 	"os"
-	"cloud.google.com/go/spanner"
+	"time"
 )
 
 const (
-	topicName          = "send_queue"
-	routines           = 10
-	database           = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
+	topicName = "send_queue"
+	routines  = 100 // must be power of 10 for division to work out neatly
+	database  = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
 )
 
 func main() {
@@ -48,6 +49,9 @@ func main() {
 	if t == nil {
 		panic("Expected topic not to be nil")
 	}
+	t.PublishSettings.CountThreshold = 10000
+	t.PublishSettings.DelayThreshold = 100 * time.Millisecond
+	t.PublishSettings.ByteThreshold = 1e9
 
 	spannerClient, err := spanner.NewClient(ctx, database)
 	if err != nil {
@@ -57,8 +61,8 @@ func main() {
 
 	sm := runManager{
 		spannerClient: spannerClient,
-		topic: t,
-		ctx:   ctx,
+		topic:         t,
+		ctx:           ctx,
 	}
 
 	r := mux.NewRouter()
