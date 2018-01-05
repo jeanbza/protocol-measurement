@@ -74,6 +74,7 @@ export default class Sidebar extends React.Component {
             <div className="new-run">
                 <label>Messages</label>
                 <select name="numMessages" onChange={e => this.setState({selectedAmount: e.target.value})}>
+                    <option value="100">100</option>
                     <option value="1000">1,000</option>
                     <option value="10000">10,000</option>
                     <option value="100000">100,000</option>
