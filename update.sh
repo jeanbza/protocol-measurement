@@ -8,6 +8,7 @@ MAX_IP_ATTEMPTS=90
 
 function update {
     NAME=$1
+    GOOS=linux go build .
     docker build --no-cache -t gcr.io/${PROJECT_ID}/$NAME:$VERSION .
     gcloud docker -- push gcr.io/${PROJECT_ID}/$NAME:$VERSION
     kubectl set image deployment/$NAME $NAME=gcr.io/${PROJECT_ID}/$NAME:$VERSION
@@ -30,14 +31,32 @@ function update {
 }
 
 gcloud container clusters get-credentials b-node-cluster --zone us-central1-a --project deklerk-sandbox
+pushd orchestrator
+    update orchestrator
+    rm orchestrator
+popd
+
 pushd receivers/http
     update http-receiver
     HTTP_RECEIVER_IP=$IP
+    rm http
+popd
+
+pushd receivers/udp
+    update udp-receiver
+    UDP_RECEIVER_IP=$IP
+    rm udp
 popd
 
 gcloud container clusters get-credentials a-node-cluster --zone us-central1-a --project deklerk-sandbox
 pushd senders/http
     update http-sender
+    rm http
+popd
+
+pushd senders/udp
+    update udp-sender
+    rm udp
 popd
 
 echo "Updated to version $VERSION"
