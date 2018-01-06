@@ -3,3 +3,4 @@ creds.json
 .idea/
 dist
 node_modules
+*.pb.go
