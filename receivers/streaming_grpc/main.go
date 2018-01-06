@@ -3,7 +3,6 @@ package main
 import (
 	"cloud.google.com/go/spanner"
 	"context"
-	xcontext "golang.org/x/net/context"
 	"deklerk-startup-project"
 	"fmt"
 	"github.com/satori/go.uuid"
@@ -43,8 +42,8 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	r := unaryGrpcServerReplier{q: insertQueue}
-	messages.RegisterGrpcUnaryInputterServiceServer(s, r)
+	r := streamingGrpcServerReplier{q: insertQueue}
+	messages.RegisterGrpcStreamingInputterServiceServer(s, r)
 
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {
@@ -54,23 +53,30 @@ func main() {
 	fmt.Println("We're done here!")
 }
 
-type unaryGrpcServerReplier struct {
+type streamingGrpcServerReplier struct {
 	q chan (*spanner.Mutation)
 }
 
-func (r unaryGrpcServerReplier) MakeRequest(ctx xcontext.Context, in *messages.ProtoMessage) (*messages.Empty, error) {
-	id, err := uuid.NewV4()
-	if err != nil {
-		return nil, err
+func (r streamingGrpcServerReplier) MakeRequest(request messages.GrpcStreamingInputterService_MakeRequestServer) error {
+	for {
+		in, err := request.Recv()
+		if err != nil {
+			return err
+		}
+
+		id, err := uuid.NewV4()
+		if err != nil {
+			return err
+		}
+
+		r.q <- spanner.Insert(
+			"results",
+			[]string{"id", "runId", "protocol", "createdAt", "sentAt", "receivedAt"},
+			[]interface{}{id.String(), in.RunId, "grpc-streaming", time.Unix(in.CreatedAt, 0), time.Unix(in.SentAt, 0), time.Now()},
+		)
 	}
 
-	r.q <- spanner.Insert(
-		"results",
-		[]string{"id", "runId", "protocol", "createdAt", "sentAt", "receivedAt"},
-		[]interface{}{id.String(), in.RunId, "grpc-unary", time.Unix(in.CreatedAt, 0), time.Unix(in.SentAt, 0), time.Now()},
-	)
-
-	return &messages.Empty{}, nil
+	return nil
 }
 
 func repeatedlySaveToSpanner(ctx context.Context, client *spanner.Client, insertQueue <-chan (*spanner.Mutation)) {

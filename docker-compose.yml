@@ -54,6 +54,18 @@ services:
       - -c
       - |
         go run receivers/unary_grpc/*.go
+  streaming_grpc_receiver:
+    build: .
+    ports:
+      - "8084:8084"
+    environment:
+      - PORT=8084
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/streaming_grpc/*.go
   http_sender:
     build: .
     links:
@@ -96,3 +108,17 @@ services:
       - -c
       - |
         go run senders/unary_grpc/*.go
+  streaming_grpc_sender:
+    build: .
+    links:
+      - streaming_grpc_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - STREAMING_GRPC_RECEIVER_IP=streaming_grpc_receiver
+      - STREAMING_GRPC_RECEIVER_PORT=8084
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/streaming_grpc/*.go
