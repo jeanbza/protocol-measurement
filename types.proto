@@ -3,8 +3,11 @@ syntax = "proto3";
 package messages;
 
 // Some generic request with a message
-message Request {
-    string message = 1;
+message ProtoMessage {
+    string runId = 1;
+    int64 createdAt = 2;
+    int64 sentAt = 3;
+    int64 receivedAt = 4;
 }
 
 message Empty {

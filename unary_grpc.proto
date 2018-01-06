@@ -7,6 +7,6 @@ import "types.proto";
 // The generic service definition.
 service GrpcUnaryInputterService {
     // Accepts a message but doesn't return anything back
-    rpc MakeRequest (Request) returns (Empty) {
+    rpc MakeRequest (ProtoMessage) returns (Empty) {
     }
 }

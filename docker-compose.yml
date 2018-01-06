@@ -42,6 +42,18 @@ services:
       - -c
       - |
         go run receivers/udp/*.go
+  unary_grpc_receiver:
+    build: .
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/unary_grpc/*.go
   http_sender:
     build: .
     links:
@@ -70,3 +82,17 @@ services:
       - -c
       - |
         go run senders/udp/*.go
+  unary_grpc_sender:
+    build: .
+    links:
+      - unary_grpc_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - UNARY_GRPC_RECEIVER_IP=unary_grpc_receiver
+      - UNARY_GRPC_RECEIVER_PORT=8083
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/unary_grpc/*.go
