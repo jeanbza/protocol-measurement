@@ -3,7 +3,9 @@
 ## Running locally
 
 1. Install docker
-1. `docker-compose up`
+1. Install [protobufs](https://github.com/golang/protobuf)
+1. `protoc *.proto --go_out=plugins=grpc:.`
+1. `docker-compose up # note - protobuf generation must have already occurred (previous step)` 
 
 ## Deploying and updating deployments
 
