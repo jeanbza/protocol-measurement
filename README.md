@@ -13,3 +13,9 @@
 
 - `./deploy.sh`
 - `./update.sh`
+
+## Debugging
+
+1. See an app's environment variables
+    1. `kubectl get pods`
+    1. `kubectl describe pods <some pod>`
