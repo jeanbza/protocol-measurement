@@ -66,6 +66,18 @@ services:
       - -c
       - |
         go run receivers/streaming_grpc/*.go
+  streaming_websocket_receiver:
+    build: .
+    ports:
+      - "8085:8085"
+    environment:
+      - PORT=8085
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/streaming_websocket/*.go
   http_sender:
     build: .
     links:
@@ -122,3 +134,17 @@ services:
       - -c
       - |
         go run senders/streaming_grpc/*.go
+  streaming_websocket_sender:
+    build: .
+    links:
+      - streaming_websocket_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - STREAMING_WEBSOCKET_RECEIVER_IP=streaming_websocket_receiver
+      - STREAMING_WEBSOCKET_RECEIVER_PORT=8085
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/streaming_websocket/*.go

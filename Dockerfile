@@ -51,6 +51,7 @@ RUN apk add --no-cache bash git openssh nodejs
 RUN go get -u cloud.google.com/go/...
 RUN go get github.com/satori/go.uuid
 RUN go get -u github.com/gorilla/mux
+RUN go get -u github.com/gorilla/websocket
 
 ADD . /go/src/deklerk-startup-project
 WORKDIR /go/src/deklerk-startup-project

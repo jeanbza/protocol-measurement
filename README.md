@@ -4,6 +4,10 @@
 
 1. Install docker
 1. Install [protobufs](https://github.com/golang/protobuf)
+1. `go get -u github.com/golang/protobuf/{proto,protoc-gen-go}`
+1. `go get github.com/gorilla/websocket`
+1. `go get golang.org/x/net/context`
+1. `go get google.golang.org/grpc`
 1. `protoc *.proto --go_out=plugins=grpc:.`
 1. `docker-compose up # note - protobuf generation must have already occurred (previous step)` 
 
