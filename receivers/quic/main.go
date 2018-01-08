@@ -7,10 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/satori/go.uuid"
-	"net"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+	"github.com/devsisters/goquic"
 )
 
 const (
@@ -21,6 +22,16 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		panic("Expected to receive an environment variable PORT")
+	}
+
+	certFile := os.Getenv("CERT_FILE")
+	if port == "" {
+		panic("Expected to receive an environment variable CERT_FILE")
+	}
+
+	privateKeyFile := os.Getenv("PRIVATE_KEY_FILE")
+	if port == "" {
+		panic("Expected to receive an environment variable PRIVATE_KEY_FILE")
 	}
 
 	ctx := context.Background()
@@ -36,29 +47,16 @@ func main() {
 
 	fmt.Println("Listening!")
 
-	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%s", port))
-	if err != nil {
-		fmt.Println(err)
-	}
+	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+		fmt.Println("Received")
 
-	conn, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer conn.Close()
-
-	buf := make([]byte, 65536)
-
-	for {
-		n, _, err := conn.ReadFromUDP(buf)
+		bodyBytes, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			panic(err)
 		}
 
-		message := buf[0:n]
-
 		var i = new(messages.Message)
-		err = json.Unmarshal(message, i)
+		err = json.Unmarshal(bodyBytes, i)
 		if err != nil {
 			panic(err)
 		}
@@ -72,11 +70,11 @@ func main() {
 		insertQueue <- spanner.Insert(
 			"results",
 			[]string{"id", "runId", "protocol", "createdAt", "sentAt", "receivedAt"},
-			[]interface{}{id.String(), i.RunId, "udp", i.CreatedAt, i.SentAt, i.ReceivedAt},
+			[]interface{}{id.String(), i.RunId, "quic", i.CreatedAt, i.SentAt, i.ReceivedAt},
 		)
-	}
+	})
 
-	err = http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	err = goquic.ListenAndServe(fmt.Sprintf(":%s", port), certFile, privateKeyFile, 1, nil)
 	if err != nil {
 		panic(err)
 	}

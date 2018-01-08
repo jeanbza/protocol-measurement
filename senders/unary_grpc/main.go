@@ -51,7 +51,7 @@ func main() {
 		panic(err)
 	}
 
-	subscriptionName := fmt.Sprintf("http-sender-%s", subscriptionId.String())
+	subscriptionName := fmt.Sprintf("unary-grpc-sender-%s", subscriptionId.String())
 
 	fmt.Println("Creating subscription", subscriptionName)
 	s, err := client.CreateSubscription(ctx, subscriptionName, pubsub.SubscriptionConfig{Topic: t})

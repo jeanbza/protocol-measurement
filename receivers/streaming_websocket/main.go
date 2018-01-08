@@ -52,7 +52,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			
+
 			i.ReceivedAt = time.Now()
 			id, err := uuid.NewV4()
 			if err != nil {

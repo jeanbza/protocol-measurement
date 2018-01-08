@@ -78,6 +78,20 @@ services:
       - -c
       - |
         go run receivers/streaming_websocket/*.go
+  quic_receiver:
+    build: .
+    ports:
+      - "8086:8086"
+    environment:
+      - PORT=8086
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - PRIVATE_KEY_FILE=/go/src/deklerk-startup-project/receivers/quic/key.unencrypted.pem
+      - CERT_FILE=/go/src/deklerk-startup-project/receivers/quic/cert.pem
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/quic/*.go
   http_sender:
     build: .
     links:
@@ -148,3 +162,17 @@ services:
       - -c
       - |
         go run senders/streaming_websocket/*.go
+  quic_sender:
+    build: .
+    links:
+      - quic_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - QUIC_RECEIVER_IP=quic_receiver
+      - QUIC_RECEIVER_PORT=8086
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/quic/*.go

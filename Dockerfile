@@ -1,5 +1,5 @@
-FROM golang:1.8-alpine
-ENV VERSION=v8.9.4 NPM_VERSION=5 YARN_VERSION=latest
+FROM golang:1.9-alpine
+ENV NODE_VERSION=v8.9.4 NPM_VERSION=5 YARN_VERSION=latest
 # ENV VERSION=v9.3.0 NPM_VERSION=5 YARN_VERSION=latest
 
 # For base builds
@@ -18,11 +18,11 @@ RUN apk add --no-cache curl make gcc g++ python linux-headers binutils-gold gnup
       56730D5401028683275BD23C23EFEFE93C4CFFFE \
       77984A986EBC2AA786BC0F66B01FBB92821C587A && break; \
   done && \
-  curl -sfSLO https://nodejs.org/dist/${VERSION}/node-${VERSION}.tar.xz && \
-  curl -sfSL https://nodejs.org/dist/${VERSION}/SHASUMS256.txt.asc | gpg --batch --decrypt | \
-    grep " node-${VERSION}.tar.xz\$" | sha256sum -c | grep ': OK$' && \
-  tar -xf node-${VERSION}.tar.xz && \
-  cd node-${VERSION} && \
+  curl -sfSLO https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}.tar.xz && \
+  curl -sfSL https://nodejs.org/dist/${NODE_VERSION}/SHASUMS256.txt.asc | gpg --batch --decrypt | \
+    grep " node-${NODE_VERSION}.tar.xz\$" | sha256sum -c | grep ': OK$' && \
+  tar -xf node-${NODE_VERSION}.tar.xz && \
+  cd node-${NODE_VERSION} && \
   ./configure --prefix=/usr ${CONFIG_FLAGS} && \
   make -j$(getconf _NPROCESSORS_ONLN) && \
   make install && \
@@ -46,12 +46,16 @@ RUN apk add --no-cache curl make gcc g++ python linux-headers binutils-gold gnup
       rm ${YARN_VERSION}.tar.gz*; \
     fi; \
   fi
-RUN apk add --no-cache bash git openssh nodejs
+RUN apk add --no-cache bash git openssh nodejs gcc cmake
 
 RUN go get -u cloud.google.com/go/...
 RUN go get github.com/satori/go.uuid
 RUN go get -u github.com/gorilla/mux
 RUN go get -u github.com/gorilla/websocket
+RUN go get -u -d github.com/devsisters/goquic
+
+# TODO: figure out how to install cmake, ninja
+#RUN cd /go/src/github.com/devsisters/goquic && GOQUIC_BUILD=Release ./build_libs.sh
 
 ADD . /go/src/deklerk-startup-project
 WORKDIR /go/src/deklerk-startup-project
