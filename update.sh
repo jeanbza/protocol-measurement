@@ -48,7 +48,25 @@ pushd receivers/udp
     rm udp
 popd
 
-gcloud container clusters get-credentials a-node-cluster --zone us-central1-a --project deklerk-sandbox
+pushd receivers/unary_grpc
+    update unary-grpc-receiver
+    UNARY_GRPC_RECEIVER_IP=$IP
+    rm unary_grpc
+popd
+
+pushd receivers/streaming_grpc
+    update streaming-grpc-receiver
+    STREAMING_GRPC_RECEIVER_IP=$IP
+    rm streaming_grpc
+popd
+
+pushd receivers/streaming_websocket
+    update streaming-websocket-receiver
+    STREAMING_WEBSOCKET_RECEIVER_IP=$IP
+    rm streaming_websocket
+popd
+
+gcloud container clusters get-credentials c-node-cluster --zone us-central1-a --project deklerk-sandbox
 pushd senders/http
     update http-sender
     rm http
@@ -57,6 +75,21 @@ popd
 pushd senders/udp
     update udp-sender
     rm udp
+popd
+
+pushd senders/unary_grpc
+    update unary-grpc-sender
+    rm unary_grpc
+popd
+
+pushd senders/streaming_grpc
+    update streaming-grpc-sender
+    rm streaming_grpc
+popd
+
+pushd senders/streaming_websocket
+    update streaming-websocket-sender
+    rm streaming_websocket
 popd
 
 echo "Updated to version $VERSION"
