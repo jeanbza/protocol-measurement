@@ -83,7 +83,7 @@ class RunResults extends React.Component {
             <progress value={fullProgress[k]} max={totalMessages}/>
         </div>)
 
-        return <div className="results-area">
+        return <div className="results">
             <div>Sent messages: {totalMessages}</div>
             {progressBars}
         </div>

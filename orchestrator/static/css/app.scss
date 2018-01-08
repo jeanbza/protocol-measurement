@@ -36,6 +36,38 @@ body, h3 {
   padding: 16px;
 }
 
+.results-area, .results {
+  width: 100%;
+}
+
+.results {
+  div {
+    display: flex;
+    padding: 16px 0;
+  }
+
+  label {
+    width: 160px;
+  }
+
+  progress {
+    flex: 1;
+    -webkit-appearance: none;
+  }
+
+  progress[value]::-webkit-progress-bar {
+    background-color: lightgray;
+  }
+
+  progress[value]::-webkit-progress-value {
+    background-color: dodgerblue;
+  }
+
+  progress[value]::-webkit-progress-bar, progress[value]::-webkit-progress-value {
+    border-radius: 5px;
+  }
+}
+
 .new-run {
   padding: 0 16px;
 
