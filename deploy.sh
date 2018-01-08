@@ -10,9 +10,17 @@ ORCHESTRATOR_PORT=8080
 
 HTTP_RECEIVER_PORT=8081
 UDP_RECEIVER_PORT=8082
+UNARY_GRPC_RECEIVER_PORT=8083
+STREAMING_GRPC_RECEIVER_PORT=8084
+STREAMING_WEBSOCKET_RECEIVER_PORT=8085
+QUIC_RECEIVER_PORT=8086
 
 HTTP_SENDER_PORT=8071
 UDP_SENDER_PORT=8072
+UNARY_GRPC_SENDER_PORT=8073
+STREAMING_GRPC_SENDER_PORT=8074
+STREAMING_WEBSOCKET_SENDER_PORT=8075
+QUIC_SENDER_PORT=8076
 
 function deploy {
     NAME=$1
@@ -64,7 +72,25 @@ pushd receivers/udp
     rm udp
 popd
 
-gcloud container clusters get-credentials a-node-cluster --zone us-central1-a --project deklerk-sandbox
+pushd receivers/unary_grpc
+    deploy unary-grpc-receiver $UNARY_GRPC_RECEIVER_PORT
+    UNARY_GRPC_RECEIVER_IP=$IP
+    rm unary_grpc
+popd
+
+pushd receivers/streaming_grpc
+    deploy streaming-grpc-receiver $STREAMING_GRPC_RECEIVER_PORT
+    STREAMING_GRPC_RECEIVER_IP=$IP
+    rm streaming_grpc
+popd
+
+pushd receivers/streaming_websocket
+    deploy streaming-websocket-receiver $STREAMING_WEBSOCKET_RECEIVER_PORT
+    STREAMING_WEBSOCKET_RECEIVER_IP=$IP
+    rm streaming_websocket
+popd
+
+gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --project deklerk-sandbox
 pushd senders/http
     deploy http-sender $HTTP_SENDER_PORT
     kubectl set env deployments/http-sender HTTP_RECEIVER_IP=$HTTP_RECEIVER_IP
@@ -77,6 +103,27 @@ pushd senders/udp
     kubectl set env deployments/udp-sender UDP_RECEIVER_IP=$UDP_RECEIVER_IP
     kubectl set env deployments/udp-sender UDP_RECEIVER_PORT=$UDP_RECEIVER_PORT
     rm udp
+popd
+
+pushd senders/unary_grpc
+    deploy unary-grpc-sender $UNARY_GRPC_SENDER_PORT
+    kubectl set env deployments/unary-grpc-sender UNARY_GRPC_RECEIVER_IP=$UNARY_GRPC_RECEIVER_IP
+    kubectl set env deployments/unary-grpc-sender UNARY_GRPC_RECEIVER_PORT=$UNARY_GRPC_RECEIVER_PORT
+    rm unary_grpc
+popd
+
+pushd senders/streaming_grpc
+    deploy streaming-grpc-sender $STREAMING_GRPC_SENDER_PORT
+    kubectl set env deployments/streaming-grpc-sender STREAMING_GRPC_RECEIVER_IP=$STREAMING_GRPC_RECEIVER_IP
+    kubectl set env deployments/streaming-grpc-sender STREAMING_GRPC_RECEIVER_PORT=$STREAMING_GRPC_RECEIVER_PORT
+    rm streaming_grpc
+popd
+
+pushd senders/streaming_websocket
+    deploy streaming-websocket-sender $STREAMING_WEBSOCKET_SENDER_PORT
+    kubectl set env deployments/streaming-websocket-sender STREAMING_WEBSOCKET_RECEIVER_IP=$STREAMING_WEBSOCKET_RECEIVER_IP
+    kubectl set env deployments/streaming-websocket-sender STREAMING_WEBSOCKET_RECEIVER_PORT=$STREAMING_WEBSOCKET_RECEIVER_PORT
+    rm streaming_websocket
 popd
 
 echo "Deployed version $VERSION"
