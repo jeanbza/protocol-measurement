@@ -20,14 +20,19 @@ func main() {
 		panic("Expected to receive an environment variable UDP_RECEIVER_PORT")
 	}
 
-	us := udpSender{sendIp, sendPort}
+	conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", sendIp, sendPort))
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	us := udpSender{conn}
 
 	messages.NewSendHost(&us, sendIp, sendPort).Start()
 }
 
 type udpSender struct {
-	sendIp   string
-	sendPort string
+	conn net.Conn
 }
 
 func (us *udpSender) SendMessage(sendRequest *messages.SendRequest) error {
@@ -42,18 +47,10 @@ func (us *udpSender) SendMessage(sendRequest *messages.SendRequest) error {
 			return err
 		}
 
-		conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", us.sendIp, us.sendPort))
+		_, err = us.conn.Write(outBytes)
 		if err != nil {
 			return err
 		}
-
-		_, err = conn.Write(outBytes)
-		if err != nil {
-			conn.Close()
-			return err
-		}
-
-		conn.Close()
 	}
 
 	return nil
