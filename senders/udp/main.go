@@ -46,12 +46,14 @@ func (us *udpSender) SendMessage(sendRequest *messages.SendRequest) error {
 		if err != nil {
 			return err
 		}
-		defer conn.Close()
 
 		_, err = conn.Write(outBytes)
 		if err != nil {
+			conn.Close()
 			return err
 		}
+
+		conn.Close()
 	}
 
 	return nil
