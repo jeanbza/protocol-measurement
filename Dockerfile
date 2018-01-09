@@ -46,7 +46,7 @@ RUN apk add --no-cache curl make gcc g++ python linux-headers binutils-gold gnup
       rm ${YARN_VERSION}.tar.gz*; \
     fi; \
   fi
-RUN apk add --no-cache bash git openssh nodejs gcc cmake
+RUN apk add --no-cache bash git openssh nodejs nodejs-npm gcc cmake
 
 RUN go get -u cloud.google.com/go/...
 RUN go get github.com/satori/go.uuid

@@ -1,19 +1,12 @@
 package main
 
 import (
-	"cloud.google.com/go/pubsub"
 	"deklerk-startup-project"
-	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"os"
 	"time"
-)
-
-const (
-	topicName = "send_queue"
 )
 
 func main() {
@@ -27,64 +20,33 @@ func main() {
 		panic("Expected to receive an environment variable UNARY_GRPC_RECEIVER_PORT")
 	}
 
-	projectId := os.Getenv("GCP_PROJECT_ID")
-	if projectId == "" {
-		panic("Expected to receive an environment variable GCP_PROJECT_ID")
-	}
-
-	ctx := context.Background()
-
-	fmt.Println("Getting client")
-	client, err := pubsub.NewClient(ctx, projectId)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create client: %v\n", err))
-	}
-
-	fmt.Println("Getting topic")
-	t := client.Topic(topicName)
-	if t == nil {
-		panic("Expected topic not to be nil")
-	}
-
-	subscriptionId, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	subscriptionName := fmt.Sprintf("unary-grpc-sender-%s", subscriptionId.String())
-
-	fmt.Println("Creating subscription", subscriptionName)
-	s, err := client.CreateSubscription(ctx, subscriptionName, pubsub.SubscriptionConfig{Topic: t})
-	if err != nil {
-		panic(err)
-	}
-
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", sendIp, sendPort), grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}
 	grpcClient := messages.NewGrpcUnaryInputterServiceClient(conn)
 
-	fmt.Println("Listening for messages")
-	err = s.Receive(ctx, func(c context.Context, msg *pubsub.Message) {
-		fmt.Println("About to send")
-		msg.Ack()
+	us := unaryGrpcSender{grpcClient}
 
-		var i = new(messages.ProtoMessage)
-		json.Unmarshal(msg.Data, &i)
+	messages.NewSendHost(&us, sendIp, sendPort).Start()
+}
 
-		i.SentAt = time.Now().Unix()
+type unaryGrpcSender struct {
+	grpcClient messages.GrpcUnaryInputterServiceClient
+}
 
-		_, err := grpcClient.MakeRequest(ctx, i)
-		if err != nil {
-			panic(err)
+func (us *unaryGrpcSender) SendMessage(sendRequest *messages.SendRequest) error {
+	for i := 0; i < sendRequest.Amount; i++ {
+		i := messages.ProtoMessage{
+			RunId:  sendRequest.RunId,
+			SentAt: time.Now().Unix(),
 		}
 
-		fmt.Println("Sent")
-	})
-	if err != nil {
-		panic(err)
+		_, err := us.grpcClient.MakeRequest(context.Background(), &i)
+		if err != nil {
+			return err
+		}
 	}
 
-	fmt.Println("We're done here!")
+	return nil
 }

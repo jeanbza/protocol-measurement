@@ -1,19 +1,13 @@
 package main
 
 import (
-	"cloud.google.com/go/pubsub"
+	"context"
 	"deklerk-startup-project"
-	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"os"
 	"time"
-)
-
-const (
-	topicName = "send_queue"
+	"io"
 )
 
 func main() {
@@ -27,65 +21,42 @@ func main() {
 		panic("Expected to receive an environment variable STREAMING_GRPC_RECEIVER_PORT")
 	}
 
-	projectId := os.Getenv("GCP_PROJECT_ID")
-	if projectId == "" {
-		panic("Expected to receive an environment variable GCP_PROJECT_ID")
-	}
-
-	ctx := context.Background()
-
-	fmt.Println("Getting client")
-	client, err := pubsub.NewClient(ctx, projectId)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create client: %v\n", err))
-	}
-
-	fmt.Println("Getting topic")
-	t := client.Topic(topicName)
-	if t == nil {
-		panic("Expected topic not to be nil")
-	}
-
-	subscriptionId, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	subscriptionName := fmt.Sprintf("streaming-grpc-sender-%s", subscriptionId.String())
-
-	fmt.Println("Creating subscription", subscriptionName)
-	s, err := client.CreateSubscription(ctx, subscriptionName, pubsub.SubscriptionConfig{Topic: t})
-	if err != nil {
-		panic(err)
-	}
-
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", sendIp, sendPort), grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}
 	grpcClient := messages.NewGrpcStreamingInputterServiceClient(conn)
-	stream, err := grpcClient.MakeRequest(ctx)
+	stream, err := grpcClient.MakeRequest(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Listening for messages")
-	err = s.Receive(ctx, func(c context.Context, msg *pubsub.Message) {
-		fmt.Println("About to send")
-		msg.Ack()
+	sgs := streamingGrpcSender{stream}
 
-		var i = new(messages.ProtoMessage)
-		json.Unmarshal(msg.Data, &i)
+	messages.NewSendHost(&sgs, sendIp, sendPort).Start()
+}
 
-		i.SentAt = time.Now().Unix()
+type streamingGrpcSender struct {
+	stream messages.GrpcStreamingInputterService_MakeRequestClient
+}
 
-		stream.Send(i)
+func (s *streamingGrpcSender) SendMessage(sendRequest *messages.SendRequest) error {
+	for i := 0; i < sendRequest.Amount; i++ {
+		input := messages.ProtoMessage{
+			RunId:  sendRequest.RunId,
+			SentAt: time.Now().Unix(),
+		}
 
-		fmt.Println("Sent")
-	})
-	if err != nil {
-		panic(err)
+		err := s.stream.Send(&input)
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println("Got an EOF")
+				i -= 1
+				continue
+			}
+			return err
+		}
 	}
 
-	fmt.Println("We're done here!")
+	return nil
 }

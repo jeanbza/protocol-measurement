@@ -1,19 +1,12 @@
 package main
 
 import (
-	"cloud.google.com/go/pubsub"
 	"deklerk-startup-project"
 	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
-	"golang.org/x/net/context"
 	"net"
 	"os"
 	"time"
-)
-
-const (
-	topicName = "send_queue"
 )
 
 func main() {
@@ -27,74 +20,39 @@ func main() {
 		panic("Expected to receive an environment variable UDP_RECEIVER_PORT")
 	}
 
-	projectId := os.Getenv("GCP_PROJECT_ID")
-	if projectId == "" {
-		panic("Expected to receive an environment variable GCP_PROJECT_ID")
-	}
+	us := udpSender{sendIp, sendPort}
 
-	ctx := context.Background()
-
-	fmt.Println("Getting client")
-	client, err := pubsub.NewClient(ctx, projectId)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to create client: %v\n", err))
-	}
-
-	fmt.Println("Getting topic")
-	t := client.Topic(topicName)
-	if t == nil {
-		panic("Expected topic not to be nil")
-	}
-
-	subscriptionId, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	subscriptionName := fmt.Sprintf("udp-sender-%s", subscriptionId.String())
-
-	fmt.Println("Creating subscription", subscriptionName)
-	s, err := client.CreateSubscription(ctx, subscriptionName, pubsub.SubscriptionConfig{Topic: t})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Listening for messages")
-	err = s.Receive(ctx, func(c context.Context, msg *pubsub.Message) {
-		fmt.Println("About to send")
-		msg.Ack()
-
-		var i = new(messages.Message)
-		json.Unmarshal(msg.Data, &i)
-
-		i.SentAt = time.Now()
-
-		err := sendMessage(sendIp, sendPort, i)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("Sent")
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("We're done here!")
+	messages.NewSendHost(&us, sendIp, sendPort).Start()
 }
 
-func sendMessage(sendIp, sendPort string, msg *messages.Message) error {
-	outBytes, err := json.Marshal(msg)
-	if err != nil {
-		return err
+type udpSender struct {
+	sendIp   string
+	sendPort string
+}
+
+func (us *udpSender) SendMessage(sendRequest *messages.SendRequest) error {
+	for i := 0; i < sendRequest.Amount; i++ {
+		m := messages.Message{
+			RunId:  sendRequest.RunId,
+			SentAt: time.Now(),
+		}
+
+		outBytes, err := json.Marshal(m)
+		if err != nil {
+			return err
+		}
+
+		conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", us.sendIp, us.sendPort))
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		_, err = conn.Write(outBytes)
+		if err != nil {
+			return err
+		}
 	}
 
-	conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", sendIp, sendPort))
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	_, err = conn.Write(outBytes)
-	return err
+	return nil
 }

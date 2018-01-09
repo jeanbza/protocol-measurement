@@ -30,7 +30,7 @@ export default class Sidebar extends React.Component {
             loading: true,
             runs: [],
             interval: interval,
-            selectedAmount: '100',
+            selectedAmount: '10000',
         }
     }
 
@@ -83,11 +83,14 @@ export default class Sidebar extends React.Component {
             </h3>
             <div className="new-run">
                 <label>Messages</label>
-                <select name="numMessages" onChange={e => this.setState({selectedAmount: e.target.value})}>
-                    <option value="100">100</option>
-                    <option value="1000">1,000</option>
+                <select name="numMessages" onChange={e => {
+                    console.log("new value: ", e.target.value)
+                    this.setState({selectedAmount: e.target.value})
+                }}>
                     <option value="10000">10,000</option>
+                    <option value="50000">50,000</option>
                     <option value="100000">100,000</option>
+                    <option value="500000">500,000</option>
                     <option value="1000000">1,000,000</option>
                 </select>
                 <button onClick={this.handleSubmit.bind(this)}>Run new run</button>

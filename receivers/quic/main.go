@@ -6,12 +6,12 @@ import (
 	"deklerk-startup-project"
 	"encoding/json"
 	"fmt"
+	"github.com/devsisters/goquic"
 	"github.com/satori/go.uuid"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
-	"github.com/devsisters/goquic"
 )
 
 const (
@@ -43,7 +43,7 @@ func main() {
 	}
 	defer client.Close()
 
-	go repeatedlySaveToSpanner(ctx, client, insertQueue)
+	go messages.NewSpannerSaver(client, insertQueue).RepeatedlySaveToSpanner(ctx)
 
 	fmt.Println("Listening!")
 
@@ -80,26 +80,4 @@ func main() {
 	}
 
 	fmt.Println("We're done here!")
-}
-
-func repeatedlySaveToSpanner(ctx context.Context, client *spanner.Client, insertQueue <-chan (*spanner.Mutation)) {
-	ticker := time.NewTicker(time.Second)
-	toBeSent := []*spanner.Mutation{}
-
-	for {
-		select {
-		case <-ticker.C:
-			if len(toBeSent) == 0 {
-				break
-			}
-			fmt.Println("Saving", len(toBeSent))
-			_, err := client.Apply(ctx, toBeSent)
-			if err != nil {
-				panic(err)
-			}
-			toBeSent = []*spanner.Mutation{}
-		case i := <-insertQueue:
-			toBeSent = append(toBeSent, i)
-		}
-	}
 }

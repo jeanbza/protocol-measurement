@@ -182,16 +182,18 @@ func (sm *runManager) createRunHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	fmt.Println(numMessages, messagesPerSend, routines, numMessages / messagesPerSend / routines)
+
 	rc := &runCreator{
-		messagesPerRoutine: numMessages / routines,
-		wg:                 &sync.WaitGroup{},
-		ctx:                sm.ctx,
-		spannerClient:      sm.spannerClient,
-		topic:              sm.topic,
-		runId:              runId.String(),
+		sendsPerRoutine: numMessages / messagesPerSend / routines,
+		wg:              &sync.WaitGroup{},
+		ctx:             sm.ctx,
+		spannerClient:   sm.spannerClient,
+		topic:           sm.topic,
+		runId:           runId.String(),
 	}
 
-	rc.create()
+	rc.create(int64(numMessages))
 	rc.printProgress()
 
 	w.WriteHeader(http.StatusCreated)
@@ -199,20 +201,20 @@ func (sm *runManager) createRunHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type runCreator struct {
-	messagesPerRoutine int
-	wg                 *sync.WaitGroup
-	ctx                context.Context
-	spannerClient      *spanner.Client
-	topic              *pubsub.Topic
-	runId              string
-	sent               uint64
+	sendsPerRoutine int
+	wg              *sync.WaitGroup
+	ctx             context.Context
+	spannerClient   *spanner.Client
+	topic           *pubsub.Topic
+	runId           string
+	sent            uint64
 }
 
-func (sc *runCreator) create() {
+func (sc *runCreator) create(numMessages int64) {
 	_, err := sc.spannerClient.Apply(sc.ctx, []*spanner.Mutation{spanner.Insert(
 		"runs",
 		[]string{"id", "createdAt", "finishedCreating", "totalMessages"},
-		[]interface{}{sc.runId, time.Now(), false, routines * sc.messagesPerRoutine},
+		[]interface{}{sc.runId, time.Now(), false, numMessages},
 	)})
 	if err != nil {
 		panic(err)
@@ -252,10 +254,12 @@ func (sc *runCreator) create() {
 }
 
 func (sc *runCreator) startAdding() {
-	for i := 0; i < sc.messagesPerRoutine; i++ {
-		m := messages.Message{
-			RunId:     sc.runId,
-			CreatedAt: time.Now(),
+	fmt.Println("Heyo", sc.sendsPerRoutine)
+	for i := 0; i < sc.sendsPerRoutine; i++ {
+		fmt.Println("About to send one")
+		m := messages.SendRequest{
+			RunId:  sc.runId,
+			Amount: messagesPerSend,
 		}
 		j, err := json.Marshal(m)
 		if err != nil {
@@ -271,10 +275,11 @@ func (sc *runCreator) startAdding() {
 		}
 
 		atomic.AddUint64(&sc.sent, 1)
+		fmt.Println("I sent one")
 	}
 	sc.wg.Done()
 }
 
 func (sc *runCreator) printProgress() {
-	fmt.Printf("%s: %d / %d\n", sc.runId, sc.sent, sc.messagesPerRoutine*routines)
+	fmt.Printf("%s: %d / %d\n", sc.runId, sc.sent, sc.sendsPerRoutine*routines)
 }

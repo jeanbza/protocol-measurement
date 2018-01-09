@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	topicName = "send_queue"
-	routines  = 100 // must be power of 10 for division to work out neatly
-	database  = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
+	topicName       = "send_queue"
+	routines        = 10 // must be power of 10 for division to work out neatly
+	messagesPerSend = 1000
+	database        = "projects/deklerk-sandbox/instances/protocol-measurement/databases/protocol-measurement"
 )
 
 func main() {
