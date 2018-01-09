@@ -66,7 +66,7 @@ pushd receivers/streaming_websocket
     rm streaming_websocket
 popd
 
-gcloud container clusters get-credentials c-node-cluster --zone us-central1-a --project deklerk-sandbox
+gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --project deklerk-sandbox
 pushd senders/http
     update http-sender
     rm http
