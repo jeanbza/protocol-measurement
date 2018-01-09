@@ -14,13 +14,16 @@ class RunResults extends React.Component {
                 clearInterval(runInterval)
             }), 200)
 
-        const progressInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}/results`))
-            .then(resp => resp.json())
-            .then(progress => this.setState({progress}))
-            .catch(err => {
-                console.error(err)
-                clearInterval(progressInterval)
-            }), 200)
+        const progressInterval = setInterval(() => {
+            console.log('looking up', selectedRun)
+            fetch(new Request(`/runs/${selectedRun}/results`))
+                .then(resp => resp.json())
+                .then(progress => this.updateProgress.bind(this)(selectedRun, progress))
+                .catch(err => {
+                    console.error(err)
+                    clearInterval(progressInterval)
+                }), 200
+        })
 
         this.state = {
             runInterval,
@@ -41,10 +44,13 @@ class RunResults extends React.Component {
             .then(run => this.setState({run}))
             .catch(err => console.error(err)), 200)
 
-        const progressInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}/results`))
-            .then(resp => resp.json())
-            .then(progress => this.setState({progress}))
-            .catch(err => console.error(err)), 200)
+        const progressInterval = setInterval(() => {
+            console.log('looking up', selectedRun)
+            fetch(new Request(`/runs/${selectedRun}/results`))
+                .then(resp => resp.json())
+                .then(progress => this.updateProgress.bind(this)(selectedRun, progress))
+                .catch(err => console.error(err)), 200
+        })
 
         this.setState({
             runInterval,
@@ -68,27 +74,38 @@ class RunResults extends React.Component {
     render() {
         const {run: {id, totalMessages}, progress} = this.state
 
-        const fullProgress = {
-            'http': false,
-            'udp': false,
-            'quic': false,
-            'websocket': false,
-            'grpc-streaming': false,
-            'grpc-unary': false,
-            ...progress
-        }
-
-        const progressBars = Object.keys(fullProgress)
-            .filter(k => fullProgress[k])
+        const progressBars = Object.keys(progress)
+            .filter(k => progress[k])
             .map(k => <div key={k}>
-                <label>{k} <small>avg {Math.round(fullProgress[k]['avgTravelTime'])}ms</small></label>
-                <progress value={fullProgress[k]['count']} max={totalMessages}/>
+                <label>{k}
+                    <small>avg {Math.round(progress[k]['avgTravelTime'])}ms</small>
+                </label>
+                <progress value={progress[k]['count']} max={totalMessages}/>
             </div>)
 
         return <div className="results">
             <div>Sent messages: {totalMessages}</div>
             {progressBars}
         </div>
+    }
+
+    updateProgress(selectedRun, newProgress) {
+        if (selectedRun !== this.props.selectedRun) {
+            return
+        }
+
+        this.setState({
+            progress: {
+                'http': false,
+                'udp': false,
+                'quic': false,
+                'websocket': false,
+                'grpc-streaming': false,
+                'grpc-unary': false,
+                ...this.state.progress,
+                ...newProgress,
+            }
+        })
     }
 }
 
