@@ -6,6 +6,8 @@ PROJECT_ID="$(gcloud config get-value project -q)"
 IP="pending"
 MAX_IP_ATTEMPTS=90
 
+PROJECT_NAME=$1
+
 function update {
     NAME=$1
     GOOS=linux go build .
@@ -30,7 +32,7 @@ function update {
     fi
 }
 
-gcloud container clusters get-credentials b-node-cluster --zone us-central1-a --project deklerk-sandbox
+gcloud container clusters get-credentials b-node-cluster --zone us-central1-a --project $PROJECT_NAME
 pushd orchestrator
     update orchestrator
     rm orchestrator
@@ -66,7 +68,7 @@ pushd receivers/streaming_websocket
     rm streaming_websocket
 popd
 
-gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --project deklerk-sandbox
+gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --project $PROJECT_NAME
 pushd senders/http
     update http-sender
     rm http

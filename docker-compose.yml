@@ -85,8 +85,8 @@ services:
     environment:
       - PORT=8086
       - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
-      - PRIVATE_KEY_FILE=/go/src/deklerk-startup-project/receivers/quic/key.unencrypted.pem
-      - CERT_FILE=/go/src/deklerk-startup-project/receivers/quic/cert.pem
+      - PRIVATE_KEY_FILE=/go/src/deklerk-startup-project/receivers/quic/dummy_key.unencrypted.pem
+      - CERT_FILE=/go/src/deklerk-startup-project/receivers/quic/dummy_cert.pem
     command:
       - /bin/sh
       - -c

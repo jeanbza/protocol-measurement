@@ -22,6 +22,8 @@ STREAMING_GRPC_SENDER_PORT=8074
 STREAMING_WEBSOCKET_SENDER_PORT=8075
 QUIC_SENDER_PORT=8076
 
+PROJECT_NAME=$1
+
 function deploy {
     NAME=$1
     PORT=$2
@@ -53,7 +55,7 @@ function deploy {
     fi
 }
 
-gcloud container clusters get-credentials b-node-cluster --zone us-central1-a --project deklerk-sandbox
+gcloud container clusters get-credentials b-node-cluster --zone us-central1-a --project $PROJECT_NAME
 pushd orchestrator
     npm install
     ./node_modules/.bin/webpack --progress
@@ -92,7 +94,7 @@ pushd receivers/streaming_websocket
 popd
 
 # TODO: these don't need to be exposed - maybe add a flag to ignore?
-gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --project deklerk-sandbox
+gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --project $PROJECT_NAME
 pushd senders/http
     deploy http-sender $HTTP_SENDER_PORT TCP
     kubectl set env deployments/http-sender HTTP_RECEIVER_IP=$HTTP_RECEIVER_IP
