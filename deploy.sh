@@ -18,7 +18,7 @@ set -e
 VERSION=`date +%s`
 PROJECT_ID="$(gcloud config get-value project -q)"
 IP="pending"
-MAX_IP_ATTEMPTS=90
+MAX_IP_ATTEMPTS=600
 
 ORCHESTRATOR_PORT=8080
 
