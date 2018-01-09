@@ -1,5 +1,7 @@
 # Protocol measurement
 
+_Disclaimer:_ This is not an officially supported Google product.
+
 This small project is meant as a visualization of the time it takes to send large amounts of messages over several
 protocols. This is _not_ intended to be a definitive measurement of the included protocols.
 
