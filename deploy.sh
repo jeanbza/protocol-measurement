@@ -57,7 +57,7 @@ function deploy {
     gcloud docker -- push gcr.io/${PROJECT_ID}/$NAME:$VERSION
     kubectl run $NAME --image=gcr.io/${PROJECT_ID}/$NAME:$VERSION --port 8080
     kubectl expose deployment $NAME --type=LoadBalancer --port=$PORT --target-port=8080 --protocol=$PROTOCOL
-    kubectl set-env deploymenhts/$NAME GCP_PROJECT_ID=$PROJECT_NAME
+    kubectl set env deployments/$NAME GCP_PROJECT_ID=$PROJECT_NAME
 
     for attempt in $( eval echo {0..$MAX_IP_ATTEMPTS} ); do
         echo "Fetch IP attempt $attempt / $MAX_IP_ATTEMPTS"
