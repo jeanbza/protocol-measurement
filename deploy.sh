@@ -36,6 +36,12 @@ STREAMING_GRPC_SENDER_PORT=8074
 STREAMING_WEBSOCKET_SENDER_PORT=8075
 QUIC_SENDER_PORT=8076
 
+if [ -z "$1" ]
+then
+      echo "The first argument is required, and should be the name of your Google Cloud project"
+      exit 1
+fi
+
 PROJECT_NAME=$1
 
 function deploy {

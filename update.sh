@@ -20,6 +20,12 @@ PROJECT_ID="$(gcloud config get-value project -q)"
 IP="pending"
 MAX_IP_ATTEMPTS=90
 
+if [ -z "$1" ]
+then
+      echo "The first argument is required, and should be the name of your Google Cloud project"
+      exit 1
+fi
+
 PROJECT_NAME=$1
 
 function update {
