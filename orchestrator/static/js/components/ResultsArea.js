@@ -14,19 +14,16 @@ class RunResults extends React.Component {
                 clearInterval(runInterval)
             }), 200)
 
-        const progressInterval = setInterval(() => {
-            console.log('looking up', selectedRun)
-            fetch(new Request(`/runs/${selectedRun}/results`))
-                .then(resp => resp.json())
-                .then(progress => this.updateProgress.bind(this)(selectedRun, progress))
-                .catch(err => {
-                    console.error(err)
-                    clearInterval(progressInterval)
-                }), 200
-        })
+        const progressInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}/results`))
+            .then(resp => resp.json())
+            .then(progress => this.updateProgress.bind(this)(selectedRun, progress))
+            .catch(err => {
+                console.error(err)
+                clearInterval(progressInterval)
+            }), 200)
 
         this.state = {
-            runInterval,
+            // runInterval,
             progressInterval,
             run: {},
             progress: {},
@@ -44,13 +41,10 @@ class RunResults extends React.Component {
             .then(run => this.setState({run}))
             .catch(err => console.error(err)), 200)
 
-        const progressInterval = setInterval(() => {
-            console.log('looking up', selectedRun)
-            fetch(new Request(`/runs/${selectedRun}/results`))
-                .then(resp => resp.json())
-                .then(progress => this.updateProgress.bind(this)(selectedRun, progress))
-                .catch(err => console.error(err)), 200
-        })
+        const progressInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}/results`))
+            .then(resp => resp.json())
+            .then(progress => this.updateProgress.bind(this)(selectedRun, progress))
+            .catch(err => console.error(err)), 200)
 
         this.setState({
             runInterval,
