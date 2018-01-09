@@ -2,6 +2,8 @@
 
 _Disclaimer:_ This is not an officially supported Google product.
 
+_Disclaimer:_ This is demo code; not production-worthy code.
+
 This small project is meant as a visualization of the time it takes to send large amounts of messages over several
 protocols. This is _not_ intended to be a definitive measurement of the included protocols.
 
@@ -45,3 +47,16 @@ that's the simplest way to deploy :)
 - See an app's environment variables
     1. `kubectl get pods`
     1. `kubectl describe pods <some pod>`
+    
+## Limitations
+
+- Senders subscribe to Google PubSub with a random subscription. If your programs exit gracelessly, these subscriptions
+will hang around. Go to [the console](console.cloud.google.com) and delete them periodically if this is happening! 
+Remember that these apps are not production code :)
+
+- Senders subscribe to Google PubSub with a random subscription. That means they must not be replicated (only 1 instance
+per sender). This is a hacky way to get an idea on paper, and may be fixed later.
+
+- Senders subscribe to Google PubSub with a random subscription. Unless you point your local (docker-compose) and 
+deployed (k8s) apps at different Google Cloud projects, your results may be wonky (two http senders/receivers measuring 
+the same message, for instance).
