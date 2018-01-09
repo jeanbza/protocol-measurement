@@ -4,3 +4,18 @@ creds.json
 dist
 node_modules
 *.pb.go
+
+# ignore binaries that might have been left around
+orchestrator/orchestrator
+receivers/http/http
+receivers/quic/quic
+receivers/streaming_grpc/streaming_grpc
+receivers/streaming_websocket/streaming_websocket
+receivers/udp/udp
+receivers/unary_grpc/unary_grpc
+senders/http/http
+senders/quic/quic
+senders/streaming_grpc/streaming_grpc
+senders/streaming_websocket/streaming_websocket
+senders/udp/udp
+senders/unary_grpc/unary_grpc
