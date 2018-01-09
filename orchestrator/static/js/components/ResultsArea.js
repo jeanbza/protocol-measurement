@@ -78,10 +78,12 @@ class RunResults extends React.Component {
             ...progress
         }
 
-        const progressBars = Object.keys(fullProgress).map(k => <div key={k}>
-            <label>{k}</label>
-            <progress value={fullProgress[k]} max={totalMessages}/>
-        </div>)
+        const progressBars = Object.keys(fullProgress)
+            .filter(k => fullProgress[k])
+            .map(k => <div key={k}>
+                <label>{k} <small>avg {Math.round(fullProgress[k]['avgTravelTime'])}ms</small></label>
+                <progress value={fullProgress[k]['count']} max={totalMessages}/>
+            </div>)
 
         return <div className="results">
             <div>Sent messages: {totalMessages}</div>

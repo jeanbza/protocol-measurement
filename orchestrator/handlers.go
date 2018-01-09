@@ -31,13 +31,13 @@ func (sm *runManager) getRunResultsHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	stmt := spanner.Statement{SQL: `
-		SELECT COUNT(*), protocol
+		SELECT protocol, COUNT(*), AVG(TIMESTAMP_DIFF(receivedAt, sentAt, MILLISECOND)) AS avgTravelTime
 		FROM results
 		WHERE runId = @runId
 		GROUP BY protocol`, Params: map[string]interface{}{"runId": runId}}
 	iter := sm.spannerClient.Single().Query(sm.ctx, stmt)
 
-	runs := map[string]int64{}
+	runs := map[string]map[string]float64{}
 
 	defer iter.Stop()
 	for {
@@ -49,13 +49,17 @@ func (sm *runManager) getRunResultsHandler(w http.ResponseWriter, r *http.Reques
 			panic(err)
 		}
 
+		var protocol string
 		var count int64
-		var run string
-		if err := row.Columns(&count, &run); err != nil {
+		var avgTravelTime float64
+		if err := row.Columns(&protocol, &count, &avgTravelTime); err != nil {
 			panic(err)
 		}
 
-		runs[run] = count
+		runs[protocol] = map[string]float64{
+			"count":         float64(count),
+			"avgTravelTime": avgTravelTime,
+		}
 	}
 
 	outBytes, err := json.Marshal(runs)
@@ -182,7 +186,7 @@ func (sm *runManager) createRunHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	fmt.Println(numMessages, messagesPerSend, routines, numMessages / messagesPerSend / routines)
+	fmt.Println(numMessages, messagesPerSend, routines, numMessages/messagesPerSend/routines)
 
 	rc := &runCreator{
 		sendsPerRoutine: numMessages / messagesPerSend / routines,
