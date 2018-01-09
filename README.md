@@ -22,6 +22,7 @@ protocols. This is _not_ intended to be a definitive measurement of the included
 
 ## Deploying and updating deployments
 
+1. Install [docker](https://www.docker.com/get-docker)
 1. Install [gcloud](https://cloud.google.com/sdk/gcloud/)
 1. Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 1. Create a [google cloud project](console.cloud.google.com)
