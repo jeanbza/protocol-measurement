@@ -132,9 +132,9 @@ pushd senders/http
 popd
 
 pushd senders/batch_http
-    deploy batch-http-sender $HTTP_SENDER_PORT TCP
-    kubectl set env deployments/batch-http-sender BATCH_HTTP_RECEIVER_IP=$HTTP_RECEIVER_IP
-    kubectl set env deployments/batch-http-sender BATCH_HTTP_RECEIVER_PORT=$HTTP_RECEIVER_PORT
+    deploy batch-http-sender $BATCH_HTTP_SENDER_PORT TCP
+    kubectl set env deployments/batch-http-sender BATCH_HTTP_RECEIVER_IP=$BATCH_HTTP_RECEIVER_IP
+    kubectl set env deployments/batch-http-sender BATCH_HTTP_RECEIVER_PORT=$BATCH_HTTP_RECEIVER_PORT
     rm batch_http
 popd
 
