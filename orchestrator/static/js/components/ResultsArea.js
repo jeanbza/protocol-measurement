@@ -104,6 +104,7 @@ class RunResults extends React.Component {
         this.setState({
             progress: {
                 'http': false,
+                'batch-http': false,
                 'udp': false,
                 'quic': false,
                 'websocket': false,

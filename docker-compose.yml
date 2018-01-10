@@ -30,6 +30,18 @@ services:
       - -c
       - |
         go run receivers/http/*.go
+  batch_http_receiver:
+    build: .
+    ports:
+      - "8087:8087"
+    environment:
+      - PORT=8087
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run receivers/batch_http/*.go
   udp_receiver:
     build: .
     ports:
@@ -106,6 +118,20 @@ services:
       - -c
       - |
         go run senders/http/*.go
+  batch_http_sender:
+    build: .
+    links:
+      - batch_http_receiver
+    environment:
+      - GCP_PROJECT_ID=deklerk-sandbox
+      - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
+      - HTTP_RECEIVER_IP=batch_http_receiver
+      - HTTP_RECEIVER_PORT=8087
+    command:
+      - /bin/sh
+      - -c
+      - |
+        go run senders/batch_http/*.go
   udp_sender:
     build: .
     links:

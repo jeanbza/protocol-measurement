@@ -60,3 +60,5 @@ per sender). This is a hacky way to get an idea on paper, and may be fixed later
 - Senders subscribe to Google PubSub with a random subscription. Unless you point your local (docker-compose) and 
 deployed (k8s) apps at different Google Cloud projects, your results may be wonky (two http senders/receivers measuring 
 the same message, for instance).
+
+- Certain enders 
