@@ -28,6 +28,7 @@ UNARY_GRPC_RECEIVER_PORT=8083
 STREAMING_GRPC_RECEIVER_PORT=8084
 STREAMING_WEBSOCKET_RECEIVER_PORT=8085
 QUIC_RECEIVER_PORT=8086
+BATCH_HTTP_RECEIVER_PORT=8087
 
 HTTP_SENDER_PORT=8071
 UDP_SENDER_PORT=8072
@@ -35,6 +36,7 @@ UNARY_GRPC_SENDER_PORT=8073
 STREAMING_GRPC_SENDER_PORT=8074
 STREAMING_WEBSOCKET_SENDER_PORT=8075
 QUIC_SENDER_PORT=8076
+BATCH_HTTP_SENDER_PORT=8077
 
 if [ -z "$1" ]
 then
@@ -90,6 +92,12 @@ pushd receivers/http
     rm http
 popd
 
+pushd receivers/batch_http
+    deploy batch-http-receiver $BATCH_HTTP_RECEIVER_PORT TCP
+    BATCH_HTTP_RECEIVER_IP=$IP
+    rm batch_http
+popd
+
 pushd receivers/udp
     deploy udp-receiver $UDP_RECEIVER_PORT UDP
     UDP_RECEIVER_IP=$IP
@@ -121,6 +129,13 @@ pushd senders/http
     kubectl set env deployments/http-sender HTTP_RECEIVER_IP=$HTTP_RECEIVER_IP
     kubectl set env deployments/http-sender HTTP_RECEIVER_PORT=$HTTP_RECEIVER_PORT
     rm http
+popd
+
+pushd senders/batch_http
+    deploy batch-http-sender $HTTP_SENDER_PORT TCP
+    kubectl set env deployments/batch-http-sender BATCH_HTTP_RECEIVER_IP=$HTTP_RECEIVER_IP
+    kubectl set env deployments/batch-http-sender BATCH_HTTP_RECEIVER_PORT=$HTTP_RECEIVER_PORT
+    rm batch_http
 popd
 
 pushd senders/udp

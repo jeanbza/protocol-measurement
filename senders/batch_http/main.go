@@ -26,14 +26,14 @@ import (
 )
 
 func main() {
-	sendIp := os.Getenv("HTTP_RECEIVER_IP")
+	sendIp := os.Getenv("BATCH_HTTP_RECEIVER_IP")
 	if sendIp == "" {
-		panic("Expected to receive an environment variable HTTP_RECEIVER_IP")
+		panic("Expected to receive an environment variable BATCH_HTTP_RECEIVER_IP")
 	}
 
-	sendPort := os.Getenv("HTTP_RECEIVER_PORT")
+	sendPort := os.Getenv("BATCH_HTTP_RECEIVER_PORT")
 	if sendPort == "" {
-		panic("Expected to receive an environment variable HTTP_RECEIVER_PORT")
+		panic("Expected to receive an environment variable BATCH_HTTP_RECEIVER_PORT")
 	}
 
 	hs := httpSender{sendIp, sendPort}

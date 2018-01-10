@@ -64,6 +64,12 @@ pushd receivers/http
     rm http
 popd
 
+pushd receivers/batch_http
+    update batch-http-receiver
+    BATCH_HTTP_RECEIVER_IP=$IP
+    rm batch_http
+popd
+
 pushd receivers/udp
     update udp-receiver
     UDP_RECEIVER_IP=$IP
@@ -92,6 +98,11 @@ gcloud container clusters get-credentials c-node-cluster --zone asia-south1-c --
 pushd senders/http
     update http-sender
     rm http
+popd
+
+pushd senders/batch_http
+    update batch-http-sender
+    rm batch_http
 popd
 
 pushd senders/udp

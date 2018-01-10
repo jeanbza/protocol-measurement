@@ -125,8 +125,8 @@ services:
     environment:
       - GCP_PROJECT_ID=deklerk-sandbox
       - GOOGLE_APPLICATION_CREDENTIALS=/go/src/deklerk-startup-project/creds.json
-      - HTTP_RECEIVER_IP=batch_http_receiver
-      - HTTP_RECEIVER_PORT=8087
+      - BATCH_HTTP_RECEIVER_IP=batch_http_receiver
+      - BATCH_HTTP_RECEIVER_PORT=8087
     command:
       - /bin/sh
       - -c
