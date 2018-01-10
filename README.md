@@ -61,4 +61,5 @@ per sender). This is a hacky way to get an idea on paper, and may be fixed later
 deployed (k8s) apps at different Google Cloud projects, your results may be wonky (two http senders/receivers measuring 
 the same message, for instance).
 
-- Certain enders 
+- Certain senders create long-lived connections upon startup. These senders _do not maintain those connections_, which
+means these senders tend to bomb out after 2-24 hours. 
