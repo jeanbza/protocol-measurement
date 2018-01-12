@@ -18,11 +18,11 @@ class RunResults extends React.Component {
     constructor(props) {
         super(props)
 
-        const {selectedRun} = props
+        const {selectedRun, runTotalMessages} = props
 
         const runInterval = setInterval(() => fetch(new Request(`/runs/${selectedRun}`))
             .then(resp => resp.json())
-            .then(run => this.setState({run}))
+            .then(run => this.setState({totalMessages: run.totalMessages, finishedCreating: run.finishedCreating}))
             .catch(err => {
                 console.error(err)
                 clearInterval(runInterval)
@@ -39,7 +39,7 @@ class RunResults extends React.Component {
         this.state = {
             // runInterval,
             progressInterval,
-            run: {},
+            totalMessages: runTotalMessages,
             progress: {},
         }
     }
@@ -74,19 +74,18 @@ class RunResults extends React.Component {
     }
 
     componentWillUpdate(nextProps, nextState) {
-        if (nextState.run.finishedCreating) {
+        if (nextState.finishedCreating) {
             clearInterval(this.state.runInterval)
         }
     }
 
     render() {
-        const {run: {id, totalMessages}, progress} = this.state
+        const {totalMessages, progress} = this.state
 
         const progressBars = Object.keys(progress)
             .filter(k => progress[k])
             .map(k => <div key={k}>
                 <label>{k}</label>
-                <label><small>mean marshal + send {Math.round(progress[k]['avgTravelTime'])}ms</small></label>
                 <progress value={progress[k]['count']} max={totalMessages}/>
             </div>)
 

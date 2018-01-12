@@ -55,10 +55,7 @@ export default class Sidebar extends React.Component {
     handleSubmit() {
         fetch(new Request('/runs', {method: 'POST', body: `{"numMessages":${this.state.selectedAmount}}`}))
             .then(resp => resp.json())
-            .then(json => {
-                console.log(json)
-                this.props.onRunChange(json.id)
-            })
+            .then(json => this.props.onRunChange(json.id, this.state.selectedAmount))
             .catch(err => console.error(err))
     }
 
@@ -72,7 +69,7 @@ export default class Sidebar extends React.Component {
                                               title={run.id}
                                               timeCreated={run.createdAt}
                                               active={run.id === selectedRun}
-                                              onClick={() => onRunChange(run.id)}/>)
+                                              onClick={() => onRunChange(run.id, this.state.selectedAmount)}/>)
 
         let content = <div className="sidebar--loading">
             Loading runs...
@@ -96,10 +93,7 @@ export default class Sidebar extends React.Component {
             </h3>
             <div className="new-run">
                 <label>Messages</label>
-                <select name="numMessages" onChange={e => {
-                    console.log("new value: ", e.target.value)
-                    this.setState({selectedAmount: e.target.value})
-                }}>
+                <select name="numMessages" onChange={e => this.setState({selectedAmount: e.target.value})}>
                     <option value="10000">10,000</option>
                     <option value="50000">50,000</option>
                     <option value="100000">100,000</option>

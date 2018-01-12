@@ -26,12 +26,14 @@ class App extends React.Component {
 
         this.state = {
             selectedRun: undefined,
+            runTotalMessages: undefined,
         }
     }
 
-    onRunChangeHandler(newRun) {
+    onRunChangeHandler(newRun, totalMessages) {
         this.setState({
             selectedRun: newRun,
+            runTotalMessages: totalMessages,
         })
     }
 
